@@ -1,0 +1,5 @@
+f(geometry) -> discrete geometry of particles
+
+f(domain, geometry) -> hash table of all particles inside discrete domain
+
+f(domain, geometry, hash_table) -> solver iterate step by step
