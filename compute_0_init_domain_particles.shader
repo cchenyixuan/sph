@@ -1,11 +1,11 @@
 #version 460 compatibility
 
 layout(std430, binding=0) buffer Particles{
-    // particle inside domain with x, y, z, 0, vx, vy, vz, 0, ...
+    // particle inside domain with x, y, z, voxel_id; vx, vy, vz, mass; rho0, p0, rho, p; r, g, b, a
     mat4x4 Particle[];
 };
 layout(std430, binding=1) buffer BoundaryParticles{
-    // particle at boundary with x, y, z, 0, vx, vy, vz, 0, ...
+    // particle at boundary with x, y, z, voxel_id; vx, vy, vz, mass; rho0, p0, rho, p; r, g, b, a
     mat4x4 BoundaryParticle[];
 };
 layout(std430, binding=2) buffer Voxels{
@@ -41,18 +41,21 @@ void AllocateParticles(){
                 // a voxel has maximum 96 slots for particles, whicl will be upgrated later  TODO
                 while(j < 96){
                     // an empty slot is found
-                    if(Voxel[i*20+2+j/16][j%16/4][j%16%4]==0){
+                    if(Voxel[i*20+2+j/16][(j%16)/4][(j%16)%4]==0){
                         // write index to slot
-                        Voxel[i*20+2+j/16][j%16/4][j%16%4] = index_float;
+                        Voxel[i*20+2+j/16][(j%16)/4][(j%16)%4] = index_float;
                         // check if the operation above has been proformed properly.
                         // if not, try again
-                        // check will be proformed after 0.001s
-                        float startTime = time;
-                        while (time - startTime < 0.001) {
+                        // check will be proformed after 100 operations
+                        int counter = 0;
+                        while (counter < 100) {
                           // do nothing
+                            counter += 1;
                         }
-                        if(Voxel[i*20+2+j/16][j%16/4][j%16%4]==index_float){
+                        if(Voxel[i*20+2+j/16][(j%16)/4][(j%16)%4]==index_float){
                             // well-performed
+                            // set particle's voxel id to i+1 at particle[index][0].w
+                            Particle[index][0].w = float(i+1);
                             break;
                         }
                         else{
