@@ -59,19 +59,19 @@ float poly6_3d(float rij, float h){
 }
 vec2 grad_poly6_2d(float x, float y, float rij, float h){
     if (rij > h){return vec2(0.0, 0.0);}
-    w_prime = - 6 * coeff.Poly6_2d * pow((h2 - rij * rij),2);
+    float w_prime = - 6 * coeff.Poly6_2d * pow((h2 - rij * rij),2);
     return vec2(w_prime * x, w_prime * y);
 }
 vec3 grad_poly6_3d(float x, float y, float z, float rij, float h){
     if (rij > h){return vec3(0.0, 0.0, 0.0);}
-    w_prime = - 6 * coeff.Poly6_3d * pow((h2 - rij * rij),2);
+    float w_prime = - 6 * coeff.Poly6_3d * pow((h2 - rij * rij),2);
     return vec3(w_prime * x, w_prime * y, w_prime * z);
 }
 float lap_poly6_2d(float rij, float h){
     if (rij > h){return 0;}
     return - 12 * coeff.Poly6_2d * (h2 - rij * rij) * (h2 - 3 * rij * rij);
 }
-float lap_poly6_2d(float rij, float h){
+float lap_poly6_3d(float rij, float h){
     if (rij > h){return 0;}
     return - 6 * coeff.Poly6_3d * (h2 - rij * rij) * (3 * h2 - 7 * rij * rij);
 }
@@ -85,12 +85,12 @@ float spiky_3d(float rij, float h){
 }
 vec2 grad_spiky_2d(float x, float y, float rij, float h){
     if (rij > h){return vec2(0.0, 0.0);}
-    w_prime = - 3 * coeff.Spiky_2d * pow((h - rij),2);
+    float w_prime = - 3 * coeff.Spiky_2d * pow((h - rij),2);
     return vec2(w_prime * x / rij, w_prime * y / rij);
 }
 vec3 grad_spiky_3d(float x, float y, float z, float rij, float h){
     if (rij > h){return vec3(0.0, 0.0, 0.0);}
-    w_prime = - 3 * coeff.Spiky_3d * pow((h - rij),2);
+    float w_prime = - 3 * coeff.Spiky_3d * pow((h - rij),2);
     return vec3(w_prime * x / rij, w_prime * y / rij, w_prime * z / rij);
 }
 float lap_spiky_2d(float rij, float h){
@@ -111,12 +111,12 @@ float viscosity_3d(float rij, float h){
 }
 vec2 grad_viscosity_2d(float x, float y, float rij, float h){
     if (rij > h){return vec2(0.0, 0.0);}
-    w_prime = coeff.Viscosity_2d * (- rij * rij / (3 * h2 * h) + rij / (2 * h2) - 1/ (6 * rij));
+    float w_prime = coeff.Viscosity_2d * (- rij * rij / (3 * h2 * h) + rij / (2 * h2) - 1/ (6 * rij));
     return vec2(w_prime * x / rij, w_prime * y / rij);
 }
 vec3 grad_viscosity_3d(float x, float y, float z, float rij, float h){
     if (rij > h){return vec3(0.0, 0.0, 0.0);}
-    w_prime = coeff.Viscosity_3d * (- 3 * rij * rij / (h2 * h) + 2 * rij / h2 - h / (2 * rij * rij));
+    float w_prime = coeff.Viscosity_3d * (- 3 * rij * rij / (h2 * h) + 2 * rij / h2 - h / (2 * rij * rij));
     return vec3(w_prime * x / rij, w_prime * y / rij, w_prime * z / rij);
 }
 float lap_viscosity_2d(float rij, float h){

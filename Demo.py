@@ -110,7 +110,35 @@ class Demo:
         glUniformMatrix4fv(self.projection_loc, 1, GL_FALSE, self.camera.projection)
         glUniformMatrix4fv(self.view_loc, 1, GL_FALSE, self.camera.view)
 
-    def __call__(self, *args, **kwargs):
+        # compute shader for voxel debug
+        self.compute_shader_voxel = compileProgram(
+            compileShader(open("voxel_compute.shader", "rb"), GL_COMPUTE_SHADER))
+        glUseProgram(self.compute_shader_voxel)
+        self.compute_shader_voxel_n_voxel_loc = glGetUniformLocation(self.compute_shader_voxel, "n_voxel")
+        self.compute_shader_voxel_id_loc = glGetUniformLocation(self.compute_shader_voxel, "id")
+
+        glUniform1i(self.compute_shader_voxel_n_voxel_loc, int(self.voxel_number))
+        glUniform1i(self.compute_shader_voxel_id_loc, 0)
+        # render shader for voxel
+        self.render_shader_voxel = compileProgram(compileShader(open("voxel_vertex.shader", "rb"), GL_VERTEX_SHADER),
+                                                  compileShader(open("voxel_geometry.shader", "rb"), GL_GEOMETRY_SHADER),
+                                                  compileShader(open("voxel_fragment.shader", "rb"), GL_FRAGMENT_SHADER))
+        glUseProgram(self.render_shader_voxel)
+
+        self.render_shader_voxel_n_particle_loc = glGetUniformLocation(self.render_shader_voxel, "n_particle")
+        self.render_shader_voxel_n_voxel_loc = glGetUniformLocation(self.render_shader_voxel, "n_voxel")
+        self.render_shader_voxel_h_loc = glGetUniformLocation(self.compute_shader_0, "h")
+
+        glUniform1i(self.render_shader_voxel_n_particle_loc, int(self.particle_number))
+        glUniform1i(self.render_shader_voxel_n_voxel_loc, int(self.voxel_number))
+        glUniform1f(self.render_shader_voxel_h_loc, self.H/2)
+
+        self.voxel_projection_loc = glGetUniformLocation(self.render_shader_voxel, "projection")
+        self.voxel_view_loc = glGetUniformLocation(self.render_shader_voxel, "view")
+        glUniformMatrix4fv(self.voxel_projection_loc, 1, GL_FALSE, self.camera.projection)
+        glUniformMatrix4fv(self.voxel_view_loc, 1, GL_FALSE, self.camera.view)
+
+    def __call__(self, i):
         if self.need_init:
             self.need_init = False
             glUseProgram(self.compute_shader_0)
@@ -124,8 +152,19 @@ class Demo:
             glUseProgram(self.compute_shader_3)
             glDispatchCompute(self.particle_number, 1, 1)
             glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
-        glBindVertexArray(self.vao)
-        glUseProgram(self.render_shader)
 
-        glPointSize(12)
+        # glUseProgram(self.compute_shader_voxel)
+        # glUniform1i(self.compute_shader_voxel_id_loc, i)
+        # glDispatchCompute(1, 1, 1)
+        # glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
+
+        glBindVertexArray(self.vao)
+        # glUseProgram(self.render_shader_voxel)
+        # glPointSize(6)
+        # glDrawArrays(GL_POINTS, 0, self.voxel_number)
+
+
+
+        glUseProgram(self.render_shader)
+        glPointSize(3)
         glDrawArrays(GL_POINTS, 0, self.particle_number)

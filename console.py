@@ -38,12 +38,16 @@ class DisplayPort:
 
         glfw.show_window(self.window)
 
+        i = 0
         while not glfw.window_should_close(self.window):
             glfw.poll_events()
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
             # render codes
-            self.demo()
+            self.demo(i//100)
+            i += 1
+            if i > self.demo.voxel_number*100:
+                i = 0
             # glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.demo.sbo_particles)
             # a = np.frombuffer(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, self.demo.particles.nbytes), dtype=np.float32)
             # a = np.reshape(a, (-1, 4))
@@ -60,7 +64,11 @@ class DisplayPort:
             delta = np.array(args[1:], dtype=np.float32) - self.cursor_position[:]
             self.cursor_position = args[1:]
             if self.click:
-                glUniformMatrix4fv(self.demo.view_loc, 1, GL_FALSE, self.demo.camera(pyrr.Vector3((*delta, 0.0)), "left"))
+                mat = self.demo.camera(pyrr.Vector3((*delta, 0.0)), "left")
+                glUseProgram(self.demo.render_shader_voxel)
+                glUniformMatrix4fv(self.demo.voxel_view_loc, 1, GL_FALSE, mat)
+                glUseProgram(self.demo.render_shader)
+                glUniformMatrix4fv(self.demo.view_loc, 1, GL_FALSE, mat)
 
         def mouse_button_clb(*args):
             if args[1] == 0 and args[2] == 1:

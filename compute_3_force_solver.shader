@@ -166,7 +166,7 @@ void ComputeParticleForce(){
     // search in neighbourhood voxels
     for(int i=4; i<32; ++i){
         // its neighbourhood voxel
-        int neighborhood_id = int(round(Voxel[(voxel_id-1)*20+i/16][i/4][i%4]));  // starts from 1
+        int neighborhood_id = int(round(Voxel[(voxel_id-1)*20+i/16][(i%16)/4][(i%16)%4]));  // starts from 1
         // valid neighborhood
         if(neighborhood_id!=0){
             // calculate vertices inside
