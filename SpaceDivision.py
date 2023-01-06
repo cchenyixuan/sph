@@ -16,40 +16,43 @@ class CreateVoxels:
         z = math.ceil((max(self.domain[:, 2]) - min(self.domain[:, 2])) / self.h) + 1
         n = x * y * z
 
-        domain_mat = np.zeros((n, 80, 4), dtype=np.float32)
+        domain_mat = np.zeros((n, 80, 4), dtype=np.int32)
         for i in range(n):
             index = i + 1
-            domain_mat[i, 0, :] = [index, (i % (x * y) // y) * self.h, (i % (x * y) % y) * self.h,
-                                   i // (x * y) * self.h]
+            # float version
+            # domain_mat[i, 0, :] = [index, (i % (x * y) // y) * self.h, (i % (x * y) % y) * self.h,
+            #                        i // (x * y) * self.h]
+            # int version
+            domain_mat[i, 0, :] = [index, (i % (x * y) // y), (i % (x * y) % y), i // (x * y)]
             front = max(0, index - (x * y))
             back = 0 if index + (x * y) > n else index + (x * y)
             pt = i % (x * y)
 
             if pt == 0:
-                buf = np.array([index, index + 1, index + y, index + y + 1], dtype=np.float32)
+                buf = np.array([index, index + 1, index + y, index + y + 1], dtype=np.int32)
             elif pt == y - 1:
-                buf = np.array([index, index - 1, index + y, index + y - 1], dtype=np.float32)
+                buf = np.array([index, index - 1, index + y, index + y - 1], dtype=np.int32)
             elif pt == x * y - y:
-                buf = np.array([index, index + 1, index - y, index - y + 1], dtype=np.float32)
+                buf = np.array([index, index + 1, index - y, index - y + 1], dtype=np.int32)
             elif pt == x * y - 1:
-                buf = np.array([index, index - 1, index - y, index - y - 1], dtype=np.float32)
+                buf = np.array([index, index - 1, index - y, index - y - 1], dtype=np.int32)
             else:
                 if pt // y == 0:
                     buf = np.array([index, index - 1, index + 1, index + y, index + y - 1, index + y + 1],
-                                   dtype=np.float32)
+                                   dtype=np.int32)
                 elif pt // y == x - 1:
                     buf = np.array([index, index - 1, index + 1, index - y, index - y - 1, index - y + 1],
-                                   dtype=np.float32)
+                                   dtype=np.int32)
                 elif pt % y == 0:
                     buf = np.array([index, index + 1, index - y, index - y + 1, index + y, index + y + 1],
-                                   dtype=np.float32)
+                                   dtype=np.int32)
                 elif pt % y == x - 1:
                     buf = np.array([index, index - 1, index - y, index - y - 1, index + y, index + y - 1],
-                                   dtype=np.float32)
+                                   dtype=np.int32)
                 else:
                     buf = np.array([index, index - 1, index + 1,
                                     index - y, index - y - 1, index - y + 1,
-                                    index + y, index + y - 1, index + y + 1], dtype=np.float32)
+                                    index + y, index + y - 1, index + y + 1], dtype=np.int32)
 
             contents = buf
             if front != 0:

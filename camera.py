@@ -4,7 +4,7 @@ import numpy as np
 
 class Camera:
     def __init__(self):
-        self.position = pyrr.Vector4([0.0, 0.0, 10.0, 1.0])
+        self.position = pyrr.Vector4([0.0, 0.0, 30.0, 1.0])
         self.front = pyrr.Vector4([0.0, 0.0, -1.0, 1.0])
         self.up = pyrr.Vector4([0.0, 1.0, 0.0, 1.0])
 
@@ -16,6 +16,7 @@ class Camera:
 
         self.mouse_left = False
         self.mouse_middle = False
+        self.mouse_right = False
         self.mouse_pos = pyrr.Vector3([0.0, 0.0, 0.0])
 
     def __call__(self, delta=pyrr.Vector3([0.0, 0.0, 0.0]), flag=None):

@@ -8,21 +8,27 @@ layout(std430, binding=1) buffer BoundaryParticles{
     // particle at boundary with x, y, z, voxel_id; vx, vy, vz, mass; rho0, p0, rho, p; r, g, b, a
     mat4x4 BoundaryParticle[];
 };
-layout(std430, binding=2) buffer Voxels{
-    // each voxel has 20 mat44 and first 2 matrices contains its id, loc_x, loc_y, loc_z and neighborhood voxel ids
+layout(std430, binding=2) coherent buffer Voxels{
+    // each voxel has 20 mat44 and first 2 matrices contains its id, x_offset of h, y_offset of h, z_offset of h; and neighborhood voxel ids
     // other 18 matrices containing current-indoor-particle-ids, particles getting out and particles stepping in
-    mat4x4 Voxel[];
+    // matrices are changed into integer arrays to apply atomic operations, first 32 integers for first 2 matrices and one voxel costs 320 integers
+    int Voxel[];
 };
+layout(std430, binding=3) coherent buffer VoxelParticleNumbers{
+    int VoxelParticleNumber[];
+};
+
 
 layout(local_size_x=1, local_size_y=1, local_size_z=1) in;
 
 uint gid = gl_GlobalInvocationID.x;
-int index = int(gid);
-float index_float = float(index);
+int particle_index = int(gid)+1;
+float particle_index_float = float(particle_index);
 
 uniform int n_particle;  // particle number
 uniform int n_voxel;  // voxel number
 uniform float h;  // smooth radius
+
 
 
 // function definitions
@@ -136,51 +142,55 @@ float lap_viscosity_3d(float rij, float h){
 
 void ComputeParticleDensityPressure(){
     // position of current particle focused
-    vec3 particle_pos = Particle[index][0].xyz;
+    vec3 particle_pos = Particle[particle_index-1][0].xyz;
     // delete its density and pressure last time, optional
-    Particle[index][2].zw = vec2(0.0);
+    Particle[particle_index-1][2].zw = vec2(0.0);
     // voxel_id of current particle
-    int voxel_id = int(round(Particle[index][0].w));  // starts from 1
+    int voxel_id = int(round(Particle[particle_index-1][0].w));  // starts from 1
     // find neighbourhood vertices, i.e., P_j
     // search in same voxel
     // calculate vertices inside
     for(int j=0; j<96; ++j){
         // vertex index
-        int index_j = int(round(Voxel[(voxel_id-1)*20+2+j/16][(j%16)/4][(j%16)%4]));
+        int index_j = Voxel[(voxel_id-1)*320+32+j];  // starts from 1
+        if(index_j==0){continue;}  // empty slot
         // distance rij
-        float rij = distance(particle_pos, Particle[index_j][0].xyz);
+        float rij = distance(particle_pos, Particle[index_j-1][0].xyz);
         // distance less than h
         if(rij<h){
             // add density to location (3, 0) of its mat4x4
             //     P_i_rho       +=         P_j_mass       * poly6_3d(rij, h)
-            Particle[index][2].z += Particle[index_j][1].w * poly6_3d(rij, h);
+            Particle[particle_index-1][2].z += Particle[index_j-1][1].w * poly6_3d(rij, h);
+
         }
     }
 
     // search in neighbourhood voxels
     for(int i=4; i<32; ++i){
         // its neighbourhood voxel
-        int neighborhood_id = int(round(Voxel[(voxel_id-1)*20+i/16][(i%16)/4][(i%16)%4]));  // starts from 1
+        int neighborhood_id = Voxel[(voxel_id-1)*320+i];  // starts from 1
         // valid neighborhood
         if(neighborhood_id!=0){
             // calculate vertices inside
             for(int j=0; j<96; ++j){
                 // vertex index
-                int index_j = int(round(Voxel[(neighborhood_id-1)*20+2+j/16][(j%16)/4][(j%16)%4]));
+                int index_j = Voxel[(neighborhood_id-1)*320+32+j];  // starts from 1
+                if(index_j==0){continue;}  // empty slot
                 // distance rij
-                float rij = distance(particle_pos, Particle[index_j][0].xyz);
+                float rij = distance(particle_pos, Particle[index_j-1][0].xyz);
                 // distance less than h
                 if(rij<h){
                     // add density to location (3, 0) of its mat4x4
                     //     P_i_rho       +=         P_j_mass       * poly6_3d(rij, h)
-                    Particle[index][2].z += Particle[index_j][1].w * poly6_3d(rij, h);
+                    Particle[particle_index-1][2].z += Particle[index_j-1][1].w * poly6_3d(rij, h);
+
                 }
             }
         }
     }
     // compute pressure by EoS
     //   P_i_pressure    = EOS_CONST * (       P_i_rho      /REST_DENS - 1)
-    Particle[index][2].w = EOS_CONST * (Particle[index][2].z/REST_DENS - 1);
+    Particle[particle_index-1][2].w = EOS_CONST * (Particle[particle_index-1][2].z/REST_DENS - 1);
 
 }
 
