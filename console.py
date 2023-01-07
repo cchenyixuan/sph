@@ -61,9 +61,9 @@ class DisplayPort:
             i += 1
             if i > self.demo.voxel_number*10:
                 i = 0
-            # glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.demo.sbo_particles)
-            # a0 = np.frombuffer(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, self.demo.particles.nbytes), dtype=np.float32)
-            # a = np.reshape(a0, (-1, 4))
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.demo.sbo_particles)
+            a0 = np.frombuffer(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, self.demo.particles.nbytes), dtype=np.float32)
+            a = np.reshape(a0, (-1, 4))
             # count = 0
             # for item in a0:
             #     if item != 0:

@@ -48,7 +48,7 @@ void AllocateParticles(){
                 int c = atomicAdd(VoxelParticleNumber[i], 1);
                 barrier();
                 // set slot with index value
-                atomicAdd(Voxel[i*320+32+c%96], particle_index);  // starts from 1
+                atomicAdd(Voxel[i*320+32+c%96], particle_index);  // starts from 1 (domain particle)
                 barrier();
                 // set particle's voxel id
                 Particle[particle_index-1][0].w = float(i+1);  // starts from 1.0

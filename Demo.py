@@ -57,20 +57,20 @@ class Demo:
         glVertexAttribIPointer(0, 1, GL_INT, 4, ctypes.c_void_p(0))
 
         # compute shader
-        # compute shader 0
-        self.compute_shader_0 = compileProgram(compileShader(open("compute_0_init_domain_particles.shader", "rb"), GL_COMPUTE_SHADER))
-        glUseProgram(self.compute_shader_0)
+        # compute shader 1
+        self.compute_shader_1 = compileProgram(compileShader(open("compute_1_init_domain_particles.shader", "rb"), GL_COMPUTE_SHADER))
+        glUseProgram(self.compute_shader_1)
         self.need_init = True
-        self.compute_shader_0_n_particle_loc = glGetUniformLocation(self.compute_shader_0, "n_particle")
-        self.compute_shader_0_n_voxel_loc = glGetUniformLocation(self.compute_shader_0, "n_voxel")
-        self.compute_shader_0_h_loc = glGetUniformLocation(self.compute_shader_0, "h")
+        self.compute_shader_0_n_particle_loc = glGetUniformLocation(self.compute_shader_1, "n_particle")
+        self.compute_shader_0_n_voxel_loc = glGetUniformLocation(self.compute_shader_1, "n_voxel")
+        self.compute_shader_0_h_loc = glGetUniformLocation(self.compute_shader_1, "h")
 
         glUniform1i(self.compute_shader_0_n_particle_loc, int(self.particle_number))
         glUniform1i(self.compute_shader_0_n_voxel_loc, int(self.voxel_number))
         glUniform1f(self.compute_shader_0_h_loc, self.H)
 
-        # compute shader 1
-        # self.compute_shader_1 = compileProgram(compileShader(open("compute_1_init_boundary_particles.shader", "rb"), GL_COMPUTE_SHADER))
+        # compute shader 0
+        # self.compute_shader_1 = compileProgram(compileShader(open("compute_0_init_boundary_particles.shader", "rb"), GL_COMPUTE_SHADER))
         # glUseProgram(self.compute_shader_1)
         # self.compute_shader_1_n_particle_loc = glGetUniformLocation(self.compute_shader_1, "n_particle")
         # self.compute_shader_1_n_voxel_loc = glGetUniformLocation(self.compute_shader_1, "n_voxel")
@@ -140,7 +140,7 @@ class Demo:
 
         self.render_shader_voxel_n_particle_loc = glGetUniformLocation(self.render_shader_voxel, "n_particle")
         self.render_shader_voxel_n_voxel_loc = glGetUniformLocation(self.render_shader_voxel, "n_voxel")
-        self.render_shader_voxel_h_loc = glGetUniformLocation(self.compute_shader_0, "h")
+        self.render_shader_voxel_h_loc = glGetUniformLocation(self.compute_shader_1, "h")
 
         glUniform1i(self.render_shader_voxel_n_particle_loc, int(self.particle_number))
         glUniform1i(self.render_shader_voxel_n_voxel_loc, int(self.voxel_number))
@@ -152,7 +152,7 @@ class Demo:
     def __call__(self, i):
         if self.need_init:
             self.need_init = False
-            glUseProgram(self.compute_shader_0)
+            glUseProgram(self.compute_shader_1)
             glDispatchCompute(self.particle_number, 1, 1)
             glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
 

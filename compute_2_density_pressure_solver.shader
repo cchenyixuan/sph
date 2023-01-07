@@ -152,17 +152,33 @@ void ComputeParticleDensityPressure(){
     // calculate vertices inside
     for(int j=0; j<96; ++j){
         // vertex index
-        int index_j = Voxel[(voxel_id-1)*320+32+j];  // starts from 1
+        int index_j = Voxel[(voxel_id-1)*320+32+j];  // starts from 1 or -1
         if(index_j==0){continue;}  // empty slot
-        // distance rij
-        float rij = distance(particle_pos, Particle[index_j-1][0].xyz);
-        // distance less than h
-        if(rij<h){
-            // add density to location (3, 0) of its mat4x4
-            //     P_i_rho       +=         P_j_mass       * poly6_3d(rij, h)
-            Particle[particle_index-1][2].z += Particle[index_j-1][1].w * poly6_3d(rij, h);
-
+        // P_j is a domain particle
+        if(index_j>0){
+            // distance rij
+            float rij = distance(particle_pos, Particle[index_j-1][0].xyz);
+            // distance less than h
+            if(rij<h){
+                // add density to location (2, 2) of its mat4x4
+                //     P_i_rho       +=         P_j_mass       * poly6_3d(rij, h)
+                Particle[particle_index-1][2].z += Particle[index_j-1][1].w * poly6_3d(rij, h);
+            }
         }
+        // P_j is a boundary particle
+        else if(index_j<0){
+            // reverse index_j
+            index_j = abs(index_j);
+            // distance rij
+            float rij = distance(particle_pos, BoundaryParticle[index_j-1][0].xyz);
+            // distance less than h
+            if(rij<h){
+                // add density to location (2, 2) of its mat4x4
+                //     P_i_rho       +=         P_j_mass       * poly6_3d(rij, h)
+                Particle[particle_index-1][2].z += BoundaryParticle[index_j-1][1].w * poly6_3d(rij, h);
+            }
+        }
+
     }
 
     // search in neighbourhood voxels
@@ -174,17 +190,32 @@ void ComputeParticleDensityPressure(){
             // calculate vertices inside
             for(int j=0; j<96; ++j){
                 // vertex index
-                int index_j = Voxel[(neighborhood_id-1)*320+32+j];  // starts from 1
+                int index_j = Voxel[(neighborhood_id-1)*320+32+j];  // starts from 1 or -1
                 if(index_j==0){continue;}  // empty slot
-                // distance rij
-                float rij = distance(particle_pos, Particle[index_j-1][0].xyz);
-                // distance less than h
-                if(rij<h){
-                    // add density to location (3, 0) of its mat4x4
-                    //     P_i_rho       +=         P_j_mass       * poly6_3d(rij, h)
-                    Particle[particle_index-1][2].z += Particle[index_j-1][1].w * poly6_3d(rij, h);
-
+                // P_j is a domain particle
+                if(index_j>0){
+                    // distance rij
+                    float rij = distance(particle_pos, Particle[index_j-1][0].xyz);
+                    // distance less than h
+                    if(rij<h){
+                        // add density to location (2, 2) of its mat4x4
+                        //     P_i_rho       +=         P_j_mass       * poly6_3d(rij, h)
+                        Particle[particle_index-1][2].z += Particle[index_j-1][1].w * poly6_3d(rij, h);
+                    }
                 }
+                else if(index_j<0){
+                    // reverse index_j
+                    index_j = abs(index_j);
+                    // distance rij
+                    float rij = distance(particle_pos, BoundaryParticle[index_j-1][0].xyz);
+                    // distance less than h
+                    if(rij<h){
+                        // add density to location (2, 2) of its mat4x4
+                        //     P_i_rho       +=         P_j_mass       * poly6_3d(rij, h)
+                        Particle[particle_index-1][2].z += BoundaryParticle[index_j-1][1].w * poly6_3d(rij, h);
+                    }
+                }
+
             }
         }
     }
