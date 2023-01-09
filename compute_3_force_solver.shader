@@ -37,6 +37,7 @@ const float PI = 3.141592653589793;
 const float REST_DENS = 1000.0;
 const float EOS_CONST = 2000.0;
 const float VISC = 10.0;
+const float DELTA_T = 0.01;
 
 
 float h2 = h * h;
@@ -243,7 +244,7 @@ void ComputeParticleForce(){
 
     // compute force
     //      P_i_force      = f_pressure + f_viscosity + f_external
-    Particle[particle_index-1][3].xyz = (f_pressure + f_viscosity + f_external)*0.01/Particle[particle_index-1][2].z;
+    Particle[particle_index-1][3].xyz = (f_pressure + f_viscosity + f_external)*DELTA_T/Particle[particle_index-1][2].z;
 }
 
 void main() {

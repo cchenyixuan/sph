@@ -38,11 +38,11 @@ void AllocateParticles(){
     for(int i=0; i < n_voxel; ++i){
         // current voxel center position
         vec3 voxel_pos = vec3(float(Voxel[i*320+1])*h, float(Voxel[i*320+2])*h, float(Voxel[i*320+3])*h);
-        // current particle inside current voxel
+        // current particle inside current voxel (vx-2/h<=px<vx+2/h)
         if(
-            abs(particle_pos.x-voxel_pos.x) < h/2 &&
-            abs(particle_pos.y-voxel_pos.y) < h/2 &&
-            abs(particle_pos.z-voxel_pos.z) < h/2
+            voxel_pos.x-h/2<=particle_pos.x && particle_pos.x<voxel_pos.x+h/2 &&
+            voxel_pos.y-h/2<=particle_pos.y && particle_pos.y<voxel_pos.y+h/2 &&
+            voxel_pos.z-h/2<=particle_pos.z && particle_pos.z<voxel_pos.z+h/2
             ){
                 // one particle found inside current voxel, get its slot id (start from 0) and add 1 to next slot id
                 int c = atomicAdd(VoxelParticleNumber[i], 1);

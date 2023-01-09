@@ -31,8 +31,6 @@ class DisplayPort:
         self.view = self.camera()
         self.view_changed = False
 
-
-
     def __call__(self, *args, **kwargs):
         glfw.make_context_current(self.window)
 
@@ -43,6 +41,9 @@ class DisplayPort:
         glUseProgram(self.demo.render_shader)
         glUniformMatrix4fv(self.demo.projection_loc, 1, GL_FALSE, self.camera.projection)
         glUniformMatrix4fv(self.demo.view_loc, 1, GL_FALSE, self.camera.view)
+        glUseProgram(self.demo.render_shader_boundary)
+        glUniformMatrix4fv(self.demo.boundary_projection_loc, 1, GL_FALSE, self.camera.projection)
+        glUniformMatrix4fv(self.demo.boundary_view_loc, 1, GL_FALSE, self.camera.view)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glEnable(GL_DEPTH_TEST)
@@ -57,13 +58,21 @@ class DisplayPort:
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
             # render codes
-            self.demo(i//10)
+            self.demo(i//100)
             i += 1
-            if i > self.demo.voxel_number*10:
+            if i > self.demo.voxel_number*100:
                 i = 0
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.demo.sbo_particles)
             a0 = np.frombuffer(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, self.demo.particles.nbytes), dtype=np.float32)
             a = np.reshape(a0, (-1, 4))
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.demo.sbo_boundary_particles)
+            b0 = np.frombuffer(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, self.demo.boundary_particles.nbytes),
+                               dtype=np.float32)
+            b = np.reshape(b0, (-1, 4))
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.demo.sbo_voxels)
+            c0 = np.frombuffer(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, self.demo.voxels.nbytes),
+                               dtype=np.int32)
+            c = np.reshape(c0, (-1, 4))
             # count = 0
             # for item in a0:
             #     if item != 0:
@@ -75,6 +84,8 @@ class DisplayPort:
                 glUniformMatrix4fv(self.demo.voxel_view_loc, 1, GL_FALSE, self.view)
                 glUseProgram(self.demo.render_shader)
                 glUniformMatrix4fv(self.demo.view_loc, 1, GL_FALSE, self.view)
+                glUseProgram(self.demo.render_shader_boundary)
+                glUniformMatrix4fv(self.demo.boundary_view_loc, 1, GL_FALSE, self.view)
                 self.view_changed = False
             # time.sleep(0.02)
 

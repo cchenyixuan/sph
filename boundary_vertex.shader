@@ -1,12 +1,7 @@
 #version 460 core
 
 layout(location=0) in int v_index; // vertex id
-out GeometryOutput{
-    vec4 v_pos;
-    vec4 v_color;
-}g_out;
-
-
+out vec4 v_color; // color output
 
 layout(std430, binding=0) buffer Particles{
     // particle inside domain with x, y, z, voxel_id; vx, vy, vz, mass; rho0, p0, rho, p; r, g, b, a
@@ -26,21 +21,16 @@ layout(std430, binding=3) coherent buffer VoxelParticleNumbers{
     int VoxelParticleNumber[];
 };
 
-uniform mat4 projection;
-uniform mat4 view;
-
 uniform int n_particle;  // particle number
 uniform int n_voxel;  // voxel number
 uniform float h;  // smooth radius
 
+uniform mat4 projection;
+uniform mat4 view;
+
 
 void main() {
-    g_out.v_pos = vec4(float(Voxel[v_index*320+1])*h, float(Voxel[v_index*320+2])*h, float(Voxel[v_index*320+3])*h, 1.0);
-    vec4 color = vec4(0.0);
-    if(Voxel[v_index*320+319]==0){color = vec4(0.5, 0.0, 0.0, 0.3);}
-    if(Voxel[v_index*320+319]==1){color = vec4(0.0, 0.5, 1.0, 1.0);}
-    if(Voxel[v_index*320+319]==2){color = vec4(0.0, 1.0, 0.5, 0.5);}
-    if(Voxel[v_index*320+319]==4){color = vec4(1.0, 1.0, 0.2, 0.5);}
-    g_out.v_color = color;
-
+    gl_Position = projection*view*vec4(BoundaryParticle[v_index][0].xyz, 1.0); // set vertex position, w=1.0
+    v_color = vec4(0.5, 0.5, 0.5, 0.3); // set output color by its voxel id
+    //v_color = vec4(abs(sin(float(voxel_id/2))), abs(cos(float(voxel_id/3))), abs(sin(float(voxel_id/5))), 0.3);
 }

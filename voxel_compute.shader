@@ -48,6 +48,11 @@ void main() {
             int c = Voxel[(voxel_id-1)*320+319];
             atomicAdd(Voxel[(voxel_id-1)*320+319], -c+2);
         }
+        // check relative position
+        if(i==4){
+            int c = Voxel[(voxel_id-1)*320+319];
+            atomicAdd(Voxel[(voxel_id-1)*320+319], -c+4);
+        }
     }
 
 }

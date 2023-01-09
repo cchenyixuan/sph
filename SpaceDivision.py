@@ -63,6 +63,28 @@ class CreateVoxels:
             contents = contents.reshape((7, 4))
 
             domain_mat[i, 1:8, :] = contents
+            # re-arrange
+            """
+            we set x, y, z have 3 status: -1, 0, 1
+            Left = (-1, 0, 0)
+            Right = (1, 0, 0)
+            Down = (0, -1, 0)
+            Up = (0, 1, 0)
+            Back = (0, 0, -1)
+            Front = (0, 0, 1)
+            and other combinations of above, i.e.
+            LeftUpBack = (-1, 1, -1) = Left + Up + Back
+            """
+            re_arrange = [
+                ["i", "x", "y", "z"],
+                ["Left", "Right", "Down", "Up"],
+                ["Back", "Front", "LeftDown", "LeftUp"],
+                ["RightDown", "RightUp", "LeftBack", "LeftFront"],
+                ["RightBack", "RightFront", "DownBack", "DownFront"],
+                ["UpBack", "UpFront", "LeftDownBack", "LeftDownFront"],
+                ["LeftUpBack", "LeftUpFront", "RightDownBack", "RightDownFront"],
+                ["RightUpBack", "RightUpFront", "0", "0"],
+            ]
         output_buffer = np.vstack((voxel_matrices for voxel_matrices in domain_mat))
         return output_buffer
 
@@ -111,8 +133,97 @@ class CreateParticles:
         output_domain_particle_mat = np.vstack((particle_mat for particle_mat in domain_particle_mat))
         return output_domain_particle_mat
 
+
+class CreateBoundaryParticles:
+    def __init__(self, domain, h, r):
+        self.domain = np.array(domain, dtype=np.float32)
+        self.h = h
+        self.r = r
+        self.d = 2*self.r
+
+    def __call__(self, *args, **kwargs):
+        return self.generate_boundary_particle_iterative(2)
+
+    def generate_boundary_particle_iterative(self, layers=1):
+        boundary_particles = []
+        min_x = np.min(self.domain[:, 0])
+        min_y = np.min(self.domain[:, 1])
+        min_z = np.min(self.domain[:, 2])
+        max_x = np.max(self.domain[:, 0])
+        max_y = np.max(self.domain[:, 1])
+        max_z = np.max(self.domain[:, 2])
+        for layer in range(layers):
+            min_x -= self.d*layer
+            min_y -= self.d*layer
+            min_z -= self.d*layer
+            max_x += self.d*layer
+            max_y += self.d*layer
+            max_z += self.d*layer
+            quantity_x = round((max_x - min_x) / self.d + 1)
+            quantity_y = round((max_y - min_y) / self.d + 1)
+            quantity_z = round((max_z - min_z) / self.d + 1)
+            # top bottom
+            for i in [0, quantity_y - 1]:
+                for j in range(quantity_z):
+                    boundary_particles.append(
+                        np.array([(min_x + _ * self.d, min_y + i * self.d, min_z + j * self.d) for _ in range(quantity_x)],
+                                 dtype=np.float32))
+            # front back
+            for j in [0, quantity_z - 1]:
+                for i in range(1, quantity_y - 1):
+                    boundary_particles.append(
+                        np.array([(min_x + _ * self.d, min_y + i * self.d, min_z + j * self.d) for _ in range(quantity_x)],
+                                 dtype=np.float32))
+            # left right
+            for i in [0, quantity_x - 1]:
+                for j in range(1, quantity_y - 1):
+                    boundary_particles.append(np.array(
+                        [(min_x + i * self.d, min_y + j * self.d, min_z + _ * self.d) for _ in range(1, quantity_z - 1)],
+                        dtype=np.float32))
+
+        boundary_particles = np.vstack(boundary_particles)
+        buffer = np.zeros((boundary_particles.shape[0] * 4, 4), dtype=np.float32)
+        for step, item in enumerate(boundary_particles):
+            buffer[step * 4][:3] = item
+            buffer[step * 4 + 1][3] = 1.0
+            buffer[step * 4 + 2][2:] = np.array((1000, 2000), dtype=np.float32)
+            buffer[step * 4 + 3][:] = np.array((1.0, 1.0, 1.0, 1.0), dtype=np.float32)
+
+        return buffer
+
     def generate_boundary_particle(self):
-        ...
+        boundary_particles = []
+        min_x = np.min(self.domain[:, 0])
+        min_y = np.min(self.domain[:, 1])
+        min_z = np.min(self.domain[:, 2])
+        max_x = np.max(self.domain[:, 0])
+        max_y = np.max(self.domain[:, 1])
+        max_z = np.max(self.domain[:, 2])
+        quantity_x = round((max_x - min_x) / self.d + 1)
+        quantity_y = round((max_y - min_y) / self.d + 1)
+        quantity_z = round((max_z - min_z) / self.d + 1)
+        # top bottom
+        for i in [0, quantity_y-1]:
+            for j in range(quantity_z):
+                boundary_particles.append(np.array([(min_x+_*self.d, min_y+i*self.d, min_z+j*self.d) for _ in range(quantity_x)], dtype=np.float32))
+        # front back
+        for j in [0, quantity_z-1]:
+            for i in range(1, quantity_y-1):
+                boundary_particles.append(np.array([(min_x+_*self.d, min_y+i*self.d, min_z+j*self.d) for _ in range(quantity_x)], dtype=np.float32))
+        # left right
+        for i in [0, quantity_x-1]:
+            for j in range(1, quantity_y-1):
+                boundary_particles.append(np.array([(min_x+i*self.d, min_y+j*self.d, min_z+_*self.d) for _ in range(1, quantity_z-1)], dtype=np.float32))
+
+        boundary_particles = np.vstack(boundary_particles)
+        buffer = np.zeros((boundary_particles.shape[0]*4, 4), dtype=np.float32)
+        for step, item in enumerate(boundary_particles):
+            buffer[step*4][:3] = item
+            buffer[step*4+1][3] = 1.0
+            buffer[step*4+2][2:] = np.array((1000, 2000), dtype=np.float32)
+            buffer[step * 4 + 3][:] = np.array((1.0, 1.0, 1.0, 1.0), dtype=np.float32)
+
+        return buffer
 
 
 if __name__ == "__main__":

@@ -3,25 +3,32 @@ import numpy as np
 from OpenGL.GL import *
 from OpenGL.GL.shaders import compileProgram, compileShader
 
-from SpaceDivision import CreateVoxels, CreateParticles
+from SpaceDivision import CreateVoxels, CreateParticles, CreateBoundaryParticles
+import time
 
 
 class Demo:
     def __init__(self):
-        self.H = 0.1
-        self.R = 0.04
+        self.H = 0.5/2
+        self.R = 0.0625/2
         self.Domain = [[0, 0, 0], [0, 1, 0], [0, 0, 1], [0, 1, 1], [1, 0, 0], [1, 0, 1], [1, 1, 0], [3, 3, 3]]  # 8x3
+        t = time.time()
         self.voxels = CreateVoxels(domain=self.Domain, h=self.H)()
-        print(self.voxels.shape)
-        self.particles = CreateParticles(domain=self.Domain, h=self.H, r=self.R)()
-        print(self.particles.shape)
+        print(self.voxels.shape, "voxel {}s".format(time.time()-t))
+        t = time.time()
+        self.particles = CreateParticles(domain=[[0, 1, 0], [0, 1, 0], [0, 0, 1], [0, 1, 1], [1, 0, 0], [1, 0, 1], [1, 1, 0], [2, 2, 1]], h=self.H, r=self.R)()
+        print(self.particles.shape, "particle {}s".format(time.time()-t))
+        t = time.time()
+        self.boundary_particles = CreateBoundaryParticles(domain=self.Domain, h=self.H, r=self.R)()
+        print(self.boundary_particles.shape, "boundary particle {}s".format(time.time()-t))
 
         self.voxel_number = self.voxels.shape[0] // 80  # (n * 80, 4)
         self.particle_number = self.particles.shape[0] // 4  # (n * 4, 4)
+        self.boundary_particle_number = self.boundary_particles.shape[0] // 4
 
         self.voxel_particle_numbers = np.zeros((self.voxel_number, ), dtype=np.int32)
 
-        self.indices_buffer = np.array([i for i in range(self.particle_number)], dtype=np.int32)
+        self.indices_buffer = np.array([i for i in range(max(self.particle_number, self.boundary_particle_number))], dtype=np.int32)
 
         # initialize OpenGL
         # particles buffer
@@ -33,7 +40,7 @@ class Demo:
         self.sbo_boundary_particles = glGenBuffers(1)
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.sbo_boundary_particles)
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, self.sbo_boundary_particles)
-        glNamedBufferStorage(self.sbo_boundary_particles, 1024, None,
+        glNamedBufferStorage(self.sbo_boundary_particles, self.boundary_particles.nbytes, self.boundary_particles,
                              GL_DYNAMIC_STORAGE_BIT)  # TODO: boundary is not defined and will be fixed in future
         # voxels buffer
         self.sbo_voxels = glGenBuffers(1)
@@ -70,15 +77,15 @@ class Demo:
         glUniform1f(self.compute_shader_0_h_loc, self.H)
 
         # compute shader 0
-        # self.compute_shader_1 = compileProgram(compileShader(open("compute_0_init_boundary_particles.shader", "rb"), GL_COMPUTE_SHADER))
-        # glUseProgram(self.compute_shader_1)
-        # self.compute_shader_1_n_particle_loc = glGetUniformLocation(self.compute_shader_1, "n_particle")
-        # self.compute_shader_1_n_voxel_loc = glGetUniformLocation(self.compute_shader_1, "n_voxel")
-        # self.compute_shader_1_h_loc = glGetUniformLocation(self.compute_shader_1, "h")
-#
-        # glUniform1i(self.compute_shader_1_n_particle_loc, int(self.particle_number))
-        # glUniform1i(self.compute_shader_1_n_voxel_loc, int(self.voxel_number))
-        # glUniform1f(self.compute_shader_1_h_loc, self.H)
+        self.compute_shader_0 = compileProgram(compileShader(open("compute_0_init_boundary_particles.shader", "rb"), GL_COMPUTE_SHADER))
+        glUseProgram(self.compute_shader_0)
+        self.compute_shader_0_n_particle_loc = glGetUniformLocation(self.compute_shader_0, "n_particle")
+        self.compute_shader_0_n_voxel_loc = glGetUniformLocation(self.compute_shader_0, "n_voxel")
+        self.compute_shader_0_h_loc = glGetUniformLocation(self.compute_shader_0, "h")
+
+        glUniform1i(self.compute_shader_0_n_particle_loc, int(self.particle_number))
+        glUniform1i(self.compute_shader_0_n_voxel_loc, int(self.voxel_number))
+        glUniform1f(self.compute_shader_0_h_loc, self.H)
 
         # compute shader 2
         self.compute_shader_2 = compileProgram(compileShader(open("compute_2_density_pressure_solver.shader", "rb"), GL_COMPUTE_SHADER))
@@ -119,6 +126,20 @@ class Demo:
         # glUniformMatrix4fv(self.projection_loc, 1, GL_FALSE, self.camera.projection)
         # glUniformMatrix4fv(self.view_loc, 1, GL_FALSE, self.camera.view)
 
+        # render shader boundary
+        self.render_shader_boundary = compileProgram(compileShader(open("boundary_vertex.shader", "rb"), GL_VERTEX_SHADER),
+                                                     compileShader(open("fragment.shader", "rb"), GL_FRAGMENT_SHADER))
+        glUseProgram(self.render_shader_boundary)
+        self.render_shader_boundary_n_particle_loc = glGetUniformLocation(self.render_shader_boundary, "n_particle")
+        self.render_shader_boundary_n_voxel_loc = glGetUniformLocation(self.render_shader_boundary, "n_voxel")
+        self.render_shader_boundary_h_loc = glGetUniformLocation(self.render_shader_boundary, "h")
+        self.boundary_projection_loc = glGetUniformLocation(self.render_shader_boundary, "projection")
+        self.boundary_view_loc = glGetUniformLocation(self.render_shader_boundary, "view")
+        #
+        glUniform1i(self.render_shader_boundary_n_particle_loc, int(self.particle_number))
+        glUniform1i(self.render_shader_boundary_n_voxel_loc, int(self.voxel_number))
+        glUniform1f(self.render_shader_boundary_h_loc, self.H)
+
         # compute shader for voxel debug
         self.compute_shader_voxel = compileProgram(
             compileShader(open("voxel_compute.shader", "rb"), GL_COMPUTE_SHADER))
@@ -152,28 +173,39 @@ class Demo:
     def __call__(self, i):
         if self.need_init:
             self.need_init = False
+
+            glUseProgram(self.compute_shader_0)
+            glDispatchCompute(self.boundary_particle_number, 1, 1)
+            glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
+
             glUseProgram(self.compute_shader_1)
             glDispatchCompute(self.particle_number, 1, 1)
             glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
 
-        glUseProgram(self.compute_shader_2)
-        glDispatchCompute(self.particle_number, 1, 1)
-        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
-
-        glUseProgram(self.compute_shader_3)
-        glDispatchCompute(self.particle_number, 1, 1)
-        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
-
-        # glUseProgram(self.compute_shader_voxel)
-        # glUniform1i(self.compute_shader_voxel_id_loc, i)
-        # glDispatchCompute(1, 1, 1)
+        # glUseProgram(self.compute_shader_2)
+        # glDispatchCompute(self.particle_number, 1, 1)
         # glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
 
-        glBindVertexArray(self.vao)
-        # glUseProgram(self.render_shader_voxel)
-        # glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
-        # glDrawArrays(GL_POINTS, 0, self.voxel_number)
+        # glUseProgram(self.compute_shader_3)
+        # glDispatchCompute(self.particle_number, 1, 1)
+        # glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
 
-        glUseProgram(self.render_shader)
-        glPointSize(15)
-        glDrawArrays(GL_POINTS, 0, self.particle_number)
+        glUseProgram(self.compute_shader_voxel)
+        glUniform1i(self.compute_shader_voxel_id_loc, i)
+        glDispatchCompute(1, 1, 1)
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
+
+        glBindVertexArray(self.vao)
+        glUseProgram(self.render_shader_voxel)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+        glDrawArrays(GL_POINTS, 0, self.voxel_number)
+
+        # glUseProgram(self.render_shader_boundary)
+        # glPointSize(4)
+        # glDrawArrays(GL_POINTS, 0, self.boundary_particle_number)
+
+        # glUseProgram(self.render_shader)
+        # glPointSize(15)
+        # glDrawArrays(GL_POINTS, 0, self.particle_number)
+
+
