@@ -54,6 +54,18 @@ class Demo:
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, self.sbo_voxel_particle_numbers)
         glNamedBufferStorage(self.sbo_voxel_particle_numbers, self.voxel_particle_numbers.nbytes, self.voxel_particle_numbers, GL_DYNAMIC_STORAGE_BIT)
 
+        # voxel_particle_in_numbers buffer
+        self.sbo_voxel_particle_in_numbers = glGenBuffers(1)
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.sbo_voxel_particle_in_numbers)
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, self.sbo_voxel_particle_in_numbers)
+        glNamedBufferStorage(self.sbo_voxel_particle_in_numbers, self.voxel_particle_numbers.nbytes, self.voxel_particle_numbers, GL_DYNAMIC_STORAGE_BIT)
+
+        # voxel_particle_out_numbers buffer
+        self.sbo_voxel_particle_out_numbers = glGenBuffers(1)
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.sbo_voxel_particle_out_numbers)
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, self.sbo_voxel_particle_out_numbers)
+        glNamedBufferStorage(self.sbo_voxel_particle_out_numbers, self.voxel_particle_numbers.nbytes, self.voxel_particle_numbers, GL_DYNAMIC_STORAGE_BIT)
+
         # vao of indices
         self.vao = glGenVertexArrays(1)
         glBindVertexArray(self.vao)
@@ -108,6 +120,18 @@ class Demo:
         glUniform1i(self.compute_shader_3_n_particle_loc, int(self.particle_number))
         glUniform1i(self.compute_shader_3_n_voxel_loc, int(self.voxel_number))
         glUniform1f(self.compute_shader_3_h_loc, self.H)
+
+        # compute shader 4
+        self.compute_shader_4 = compileProgram(
+            compileShader(open("compute_4_integrate_solver.shader", "rb"), GL_COMPUTE_SHADER))
+        glUseProgram(self.compute_shader_4)
+        self.compute_shader_4_n_particle_loc = glGetUniformLocation(self.compute_shader_4, "n_particle")
+        self.compute_shader_4_n_voxel_loc = glGetUniformLocation(self.compute_shader_4, "n_voxel")
+        self.compute_shader_4_h_loc = glGetUniformLocation(self.compute_shader_4, "h")
+
+        glUniform1i(self.compute_shader_4_n_particle_loc, int(self.particle_number))
+        glUniform1i(self.compute_shader_4_n_voxel_loc, int(self.voxel_number))
+        glUniform1f(self.compute_shader_4_h_loc, self.H)
 
         # render shader
         self.render_shader = compileProgram(compileShader(open("vertex.shader", "rb"), GL_VERTEX_SHADER),
@@ -182,18 +206,22 @@ class Demo:
             glDispatchCompute(self.particle_number, 1, 1)
             glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
 
-        # glUseProgram(self.compute_shader_2)
-        # glDispatchCompute(self.particle_number, 1, 1)
-        # glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
-
-        # glUseProgram(self.compute_shader_3)
-        # glDispatchCompute(self.particle_number, 1, 1)
-        # glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
-
-        glUseProgram(self.compute_shader_voxel)
-        glUniform1i(self.compute_shader_voxel_id_loc, i)
-        glDispatchCompute(1, 1, 1)
+        glUseProgram(self.compute_shader_2)
+        glDispatchCompute(self.particle_number, 1, 1)
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
+
+        glUseProgram(self.compute_shader_3)
+        glDispatchCompute(self.particle_number, 1, 1)
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
+
+        glUseProgram(self.compute_shader_4)
+        glDispatchCompute(self.particle_number, 1, 1)
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
+
+        # glUseProgram(self.compute_shader_voxel)
+        # glUniform1i(self.compute_shader_voxel_id_loc, i)
+        # glDispatchCompute(1, 1, 1)
+        # glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
 
         glBindVertexArray(self.vao)
         glUseProgram(self.render_shader_voxel)

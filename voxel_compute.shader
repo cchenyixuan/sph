@@ -17,6 +17,13 @@ layout(std430, binding=2) coherent buffer Voxels{
 layout(std430, binding=3) coherent buffer VoxelParticleNumbers{
     int VoxelParticleNumber[];
 };
+layout(std430, binding=4) coherent buffer VoxelParticleInNumbers{
+    int VoxelParticleInNumber[];
+};
+layout(std430, binding=5) coherent buffer VoxelParticleOutNumbers{
+    int VoxelParticleOutNumber[];
+};
+
 
 layout(local_size_x=1, local_size_y=1, local_size_z=1) in;
 

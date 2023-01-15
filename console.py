@@ -73,6 +73,35 @@ class DisplayPort:
             c0 = np.frombuffer(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, self.demo.voxels.nbytes),
                                dtype=np.int32)
             c = np.reshape(c0, (-1, 4))
+
+            total = 0
+            total_after = 0
+            total_in = 0
+            total_out = 0
+            for i in range(self.demo.voxel_number):
+                buf = c[i * 80: i * 80 + 80]
+                _origin = buf[8:32].reshape((96,))
+                _out = buf[32:56].reshape((96,))
+                _in = buf[56:80].reshape((96,))
+                n_ = 0
+                n_o = 0
+                n_i = 0
+                for j in range(96):
+                    if _origin[j] != 0:
+                        n_ += 1
+                    if _out[j] != 0:
+                        n_o += 1
+                    if _in[j] != 0:
+                        n_i += 1
+                print(n_, n_o, n_i)
+                total += n_
+                total_after += n_
+                total_after += -n_o
+                total_after += n_i
+                total_in += n_i
+                total_out += n_o
+            print(total, total_after, total_in, total_out)
+
             # count = 0
             # for item in a0:
             #     if item != 0:
