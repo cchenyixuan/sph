@@ -4,7 +4,7 @@ import numpy as np
 
 class Camera:
     def __init__(self):
-        self.position = pyrr.Vector4([0.0, 0.0, 30.0, 1.0])
+        self.position = pyrr.Vector4([1.0, 1.0, 10.0, 1.0])
         self.front = pyrr.Vector4([0.0, 0.0, -1.0, 1.0])
         self.up = pyrr.Vector4([0.0, 1.0, 0.0, 1.0])
 

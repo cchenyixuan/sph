@@ -40,10 +40,10 @@ uniform float h;  // smooth radius
 // function definitions
 
 const float PI = 3.141592653589793;
-const float REST_DENS = 1000.0;
-const float EOS_CONST = 2000.0;
+const float REST_DENS = 15.0;
+const float EOS_CONST = 1000.0;
 const float VISC = 10.0;
-const float DELTA_T = 0.01;
+const float DELTA_T = 0.0005;
 
 
 float h2 = h * h;

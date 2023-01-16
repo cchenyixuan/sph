@@ -40,11 +40,11 @@ uniform float h;  // smooth radius
 // function definitions
 
 const float PI = 3.141592653589793;
-const float REST_DENS = 1000.0;
-const float EOS_CONST = 2000.0;
+const float REST_DENS = 15.0;
+const float EOS_CONST = 1000.0;
 const float VISC = 10.0;
 const float DELTA_T = 0.01;
-const float EPS = 0.01;  // to control movement not too large
+const float EPS = 0.0005;  // to control movement not too large
 
 
 float h2 = h * h;
@@ -355,7 +355,7 @@ void EulerMethod(){
     // particle position and velocity will be set and particle acceleration will be erased
     Particle[particle_index-1][0].xyz = future_pos;
     Particle[particle_index-1][1].xyz += Particle[particle_index-1][3].xyz*DELTA_T;
-    Particle[particle_index-1][3].xyz = vec3(0.0);
+    //Particle[particle_index-1][3].xyz = vec3(0.0);
 }
 
 void main() {

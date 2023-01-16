@@ -139,6 +139,10 @@ void UpgradeVoxel(){
     for(int i=0; i<96; ++i){
         Voxel[(voxel_index-1)*320+32+96+96+i%96] = 0;
     }
+    // re-calculate VoxelParticleNumber and clear VoxelParticleInNumber and VoxelParticleOutNumber
+    VoxelParticleNumber[voxel_index-1] += -VoxelParticleOutNumber[voxel_index-1]+VoxelParticleInNumber[voxel_index-1];
+    VoxelParticleOutNumber[voxel_index-1] = 0;
+    VoxelParticleInNumber[voxel_index-1] = 0;
 }
 
 void main() {

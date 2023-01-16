@@ -29,40 +29,41 @@ class CreateVoxels:
             pt = i % (x * y)
 
             if pt == 0:
-                buf = np.array([index, index + 1, index + y, index + y + 1], dtype=np.int32)
+                buf = np.array([0, index + 1, 0, index + y, 0, 0, 0, index + y + 1], dtype=np.int32)
             elif pt == y - 1:
-                buf = np.array([index, index - 1, index + y, index + y - 1], dtype=np.int32)
+                buf = np.array([index - 1, 0, 0, index + y, 0, index + y - 1, 0, 0], dtype=np.int32)
             elif pt == x * y - y:
-                buf = np.array([index, index + 1, index - y, index - y + 1], dtype=np.int32)
+                buf = np.array([0, index + 1, index - y, 0, 0, 0, index - y + 1, 0], dtype=np.int32)
             elif pt == x * y - 1:
-                buf = np.array([index, index - 1, index - y, index - y - 1], dtype=np.int32)
+                buf = np.array([index - 1, 0,index - y, 0, index - y - 1, 0,  0, 0], dtype=np.int32)
             else:
                 if pt // y == 0:
-                    buf = np.array([index, index - 1, index + 1, index + y, index + y - 1, index + y + 1],
+                    buf = np.array([index - 1, index + 1, 0, index + y, 0, index + y - 1, 0, index + y + 1],
                                    dtype=np.int32)
                 elif pt // y == x - 1:
-                    buf = np.array([index, index - 1, index + 1, index - y, index - y - 1, index - y + 1],
+                    buf = np.array([index - 1, index + 1, index - y, 0, index - y - 1, 0, index - y + 1, 0],
                                    dtype=np.int32)
                 elif pt % y == 0:
-                    buf = np.array([index, index + 1, index - y, index - y + 1, index + y, index + y + 1],
+                    buf = np.array([0, index + 1, index - y, index + y, 0, 0, index - y + 1, index + y + 1],
                                    dtype=np.int32)
                 elif pt % y == x - 1:
-                    buf = np.array([index, index - 1, index - y, index - y - 1, index + y, index + y - 1],
+                    buf = np.array([index - 1, 0, index - y, index + y, index - y - 1, index + y - 1, 0, 0],
                                    dtype=np.int32)
                 else:
-                    buf = np.array([index, index - 1, index + 1,
-                                    index - y, index - y - 1, index - y + 1,
-                                    index + y, index + y - 1, index + y + 1], dtype=np.int32)
+                    buf = np.array([index - 1, index + 1, index - y, index + y,
+                                    index - y - 1, index + y - 1, index - y + 1, index + y + 1], dtype=np.int32)
 
-            contents = buf
-            if front != 0:
-                contents = np.hstack((contents, buf - x * y))
+            contents = np.zeros((2, 8), dtype=np.float32)
             if back != 0:
-                contents = np.hstack((contents, buf + x * y))
-            contents = np.pad(contents[1:], [(0, 29 - len(contents))])
+                contents[0, :] = [pos + x * y if pos != 0 else 0 for pos in buf]
+            if front != 0:
+                contents[1, :] = [pos - x * y if pos != 0 else 0 for pos in buf]
+            contents = contents.T
+            contents = contents.reshape(16)
+            contents = np.hstack((buf[:4], back, front, buf[4:], contents, 0, 0))
             contents = contents.reshape((7, 4))
-
             domain_mat[i, 1:8, :] = contents
+
             # re-arrange
             """
             we set x, y, z have 3 status: -1, 0, 1
@@ -124,7 +125,7 @@ class CreateParticles:
                     # assign a particle to its location with a random offset in scale [-r/10, r/10]
                     domain_particle_mat[particle_id][0, :3] = start_point + np.array((i*self.r*2+self.r, j*self.r*2+self.r, k*self.r*2+self.r), dtype=np.float32) + ((np.random.ranf(3)-0.50)*2)*(0.1*self.r)
                     # assign initial mass
-                    domain_particle_mat[particle_id][1, 3] = 1.0
+                    domain_particle_mat[particle_id][1, 3] = 0.27
                     # assign initial velocity
 
                     # assign initial density
@@ -142,7 +143,7 @@ class CreateBoundaryParticles:
         self.d = 2*self.r
 
     def __call__(self, *args, **kwargs):
-        return self.generate_boundary_particle_iterative(2)
+        return self.generate_boundary_particle_iterative(1)
 
     def generate_boundary_particle_iterative(self, layers=1):
         boundary_particles = []
@@ -153,12 +154,12 @@ class CreateBoundaryParticles:
         max_y = np.max(self.domain[:, 1])
         max_z = np.max(self.domain[:, 2])
         for layer in range(layers):
-            min_x -= self.d*layer
-            min_y -= self.d*layer
-            min_z -= self.d*layer
-            max_x += self.d*layer
-            max_y += self.d*layer
-            max_z += self.d*layer
+            min_x -= self.d
+            min_y -= self.d
+            min_z -= self.d
+            max_x += self.d
+            max_y += self.d
+            max_z += self.d
             quantity_x = round((max_x - min_x) / self.d + 1)
             quantity_y = round((max_y - min_y) / self.d + 1)
             quantity_z = round((max_z - min_z) / self.d + 1)
@@ -219,8 +220,8 @@ class CreateBoundaryParticles:
         buffer = np.zeros((boundary_particles.shape[0]*4, 4), dtype=np.float32)
         for step, item in enumerate(boundary_particles):
             buffer[step*4][:3] = item
-            buffer[step*4+1][3] = 1.0
-            buffer[step*4+2][2:] = np.array((1000, 2000), dtype=np.float32)
+            buffer[step*4+1][3] = 1000.0
+            buffer[step*4+2][2:] = np.array((500, 1000), dtype=np.float32)
             buffer[step * 4 + 3][:] = np.array((1.0, 1.0, 1.0, 1.0), dtype=np.float32)
 
         return buffer

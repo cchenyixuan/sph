@@ -62,6 +62,7 @@ class DisplayPort:
             i += 1
             if i > self.demo.voxel_number*100:
                 i = 0
+
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.demo.sbo_particles)
             a0 = np.frombuffer(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, self.demo.particles.nbytes), dtype=np.float32)
             a = np.reshape(a0, (-1, 4))
@@ -73,7 +74,7 @@ class DisplayPort:
             c0 = np.frombuffer(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, self.demo.voxels.nbytes),
                                dtype=np.int32)
             c = np.reshape(c0, (-1, 4))
-
+            """
             total = 0
             total_after = 0
             total_in = 0
@@ -101,13 +102,14 @@ class DisplayPort:
                 total_in += n_i
                 total_out += n_o
             print(total, total_after, total_in, total_out)
-
+            """
             # count = 0
             # for item in a0:
             #     if item != 0:
             #         count +=1
             # print(count, self.demo.particle_number)
             # print(a)
+
             if self.view_changed:
                 glUseProgram(self.demo.render_shader_voxel)
                 glUniformMatrix4fv(self.demo.voxel_view_loc, 1, GL_FALSE, self.view)
