@@ -52,7 +52,7 @@ float h2 = h * h;
 void EulerMethod(){
     // calculate future position
     //   move =             P_velocity           *   dt   +      P_acceleration  *     dt/2
-    vec3 move = vec3(0.1, 0.12, 0.07)/20;//Particle[particle_index-1][1].xyz*DELTA_T;// + Particle[particle_index-1][3].xyz*DELTA_T*DELTA_T/2;
+    vec3 move = Particle[particle_index-1][1].xyz*DELTA_T + Particle[particle_index-1][3].xyz*DELTA_T*DELTA_T/2;
     // estimate future position
     //   future_pos =             P_position            + move
     vec3 future_pos = Particle[particle_index-1][0].xyz + move;

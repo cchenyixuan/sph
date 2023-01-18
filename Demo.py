@@ -9,8 +9,8 @@ import time
 
 class Demo:
     def __init__(self):
-        self.H = 0.5
-        self.R = 0.22
+        self.H = 0.25
+        self.R = 0.25/5
         self.Domain = [[0, 0, 0], [0, 1, 0], [0, 0, 1], [0, 1, 1], [1, 0, 0], [1, 0, 1], [1, 1, 0], [3, 3, 3]]  # 8x3
         t = time.time()
         self.voxels = CreateVoxels(domain=self.Domain, h=self.H)()
@@ -248,10 +248,10 @@ class Demo:
             glDispatchCompute(self.voxel_number, 1, 1)
             glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
 
-        glUseProgram(self.compute_shader_voxel)
-        glUniform1i(self.compute_shader_voxel_id_loc, i)
-        glDispatchCompute(1, 1, 1)
-        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
+        # glUseProgram(self.compute_shader_voxel)
+        # glUniform1i(self.compute_shader_voxel_id_loc, i)
+        # glDispatchCompute(1, 1, 1)
+        # glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
 
         glBindVertexArray(self.vao)
         glUseProgram(self.render_shader_voxel)
