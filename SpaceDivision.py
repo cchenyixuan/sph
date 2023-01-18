@@ -155,7 +155,7 @@ class CreateBoundaryParticles:
         self.d = 2*self.r
 
     def __call__(self, *args, **kwargs):
-        return self.generate_boundary_particle_iterative(1)
+        return self.generate_boundary_particle_iterative(4)
 
     def generate_boundary_particle_iterative(self, layers=1):
         boundary_particles = []
@@ -198,8 +198,8 @@ class CreateBoundaryParticles:
         buffer = np.zeros((boundary_particles.shape[0] * 4, 4), dtype=np.float32)
         for step, item in enumerate(boundary_particles):
             buffer[step * 4][:3] = item
-            buffer[step * 4 + 1][3] = 1.0
-            buffer[step * 4 + 2][2:] = np.array((1000, 2000), dtype=np.float32)
+            buffer[step * 4 + 1][3] = 10.0
+            buffer[step * 4 + 2][2:] = np.array((1500, 1000), dtype=np.float32)
             buffer[step * 4 + 3][:] = np.array((1.0, 1.0, 1.0, 1.0), dtype=np.float32)
 
         return buffer
