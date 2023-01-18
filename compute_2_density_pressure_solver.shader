@@ -40,7 +40,7 @@ uniform float h;  // smooth radius
 // function definitions
 
 const float PI = 3.141592653589793;
-const float REST_DENS = 15.0;
+const float REST_DENS = 1500.0;
 const float EOS_CONST = 1000.0;
 const float VISC = 10.0;
 const float DELTA_T = 0.0005;
@@ -152,6 +152,8 @@ void ComputeParticleDensityPressure(){
     vec3 particle_pos = Particle[particle_index-1][0].xyz;
     // delete its density and pressure last time, optional
     Particle[particle_index-1][2].zw = vec2(0.0);
+    // neighbourhoods count
+    vec2 neighbourhood_counter = vec2(0.0, 0.0);  // .x: domain_particle; .y: boundary_particle
     // voxel_id of current particle
     int voxel_id = int(round(Particle[particle_index-1][0].w));  // starts from 1
     // find neighbourhood vertices, i.e., P_j
@@ -162,11 +164,14 @@ void ComputeParticleDensityPressure(){
         int index_j = Voxel[(voxel_id-1)*320+32+j];  // starts from 1 or -1
         if(index_j==0){continue;}  // empty slot
         // P_j is a domain particle
-        if(index_j>0){
+        else if(index_j>0){
+
             // distance rij
             float rij = distance(particle_pos, Particle[index_j-1][0].xyz);
             // distance less than h
             if(rij<h){
+                // counter
+                neighbourhood_counter.x += 1.0;
                 // add density to location (2, 2) of its mat4x4
                 //     P_i_rho       +=         P_j_mass       * poly6_3d(rij, h)
                 Particle[particle_index-1][2].z += Particle[index_j-1][1].w * poly6_3d(rij, h);
@@ -175,11 +180,13 @@ void ComputeParticleDensityPressure(){
         // P_j is a boundary particle
         else if(index_j<0){
             // reverse index_j
-            index_j = abs(index_j);
+            index_j = -index_j;
             // distance rij
             float rij = distance(particle_pos, BoundaryParticle[index_j-1][0].xyz);
             // distance less than h
             if(rij<h){
+                // counter
+                neighbourhood_counter.y += 1.0;
                 // add density to location (2, 2) of its mat4x4
                 //     P_i_rho       +=         P_j_mass       * poly6_3d(rij, h)
                 Particle[particle_index-1][2].z += BoundaryParticle[index_j-1][1].w * poly6_3d(rij, h);
@@ -189,7 +196,7 @@ void ComputeParticleDensityPressure(){
     }
 
     // search in neighbourhood voxels
-    for(int i=4; i<32; ++i){
+    for(int i=4; i<30; ++i){
         // its neighbourhood voxel
         int neighborhood_id = Voxel[(voxel_id-1)*320+i];  // starts from 1
         // valid neighborhood
@@ -200,11 +207,13 @@ void ComputeParticleDensityPressure(){
                 int index_j = Voxel[(neighborhood_id-1)*320+32+j];  // starts from 1 or -1
                 if(index_j==0){continue;}  // empty slot
                 // P_j is a domain particle
-                if(index_j>0){
+                else if(index_j>0){
                     // distance rij
                     float rij = distance(particle_pos, Particle[index_j-1][0].xyz);
                     // distance less than h
                     if(rij<h){
+                        // counter
+                        neighbourhood_counter.x += 1.0;
                         // add density to location (2, 2) of its mat4x4
                         //     P_i_rho       +=         P_j_mass       * poly6_3d(rij, h)
                         Particle[particle_index-1][2].z += Particle[index_j-1][1].w * poly6_3d(rij, h);
@@ -212,11 +221,13 @@ void ComputeParticleDensityPressure(){
                 }
                 else if(index_j<0){
                     // reverse index_j
-                    index_j = abs(index_j);
+                    index_j = -index_j;
                     // distance rij
                     float rij = distance(particle_pos, BoundaryParticle[index_j-1][0].xyz);
                     // distance less than h
                     if(rij<h){
+                        // counter
+                        neighbourhood_counter.y += 1.0;
                         // add density to location (2, 2) of its mat4x4
                         //     P_i_rho       +=         P_j_mass       * poly6_3d(rij, h)
                         Particle[particle_index-1][2].z += BoundaryParticle[index_j-1][1].w * poly6_3d(rij, h);
@@ -229,6 +240,8 @@ void ComputeParticleDensityPressure(){
     // compute pressure by EoS
     //   P_i_pressure    = EOS_CONST * (       P_i_rho      /REST_DENS - 1)
     Particle[particle_index-1][2].w = EOS_CONST * (Particle[particle_index-1][2].z/REST_DENS - 1);
+    // adapt counter to particle[i][2].xy
+    Particle[particle_index-1][2].xy = neighbourhood_counter;
 
 }
 

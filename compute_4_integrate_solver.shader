@@ -40,10 +40,10 @@ uniform float h;  // smooth radius
 // function definitions
 
 const float PI = 3.141592653589793;
-const float REST_DENS = 15.0;
+const float REST_DENS = 1500.0;
 const float EOS_CONST = 1000.0;
 const float VISC = 10.0;
-const float DELTA_T = 0.01;
+const float DELTA_T = 0.0005;
 const float EPS = 0.0005;  // to control movement not too large
 
 
@@ -52,7 +52,7 @@ float h2 = h * h;
 void EulerMethod(){
     // calculate future position
     //   move =             P_velocity           *   dt   +      P_acceleration  *     dt/2
-    vec3 move = Particle[particle_index-1][1].xyz*DELTA_T + Particle[particle_index-1][3].xyz*DELTA_T*DELTA_T/2;
+    vec3 move = vec3(0.1, 0.12, 0.07)/20;//Particle[particle_index-1][1].xyz*DELTA_T;// + Particle[particle_index-1][3].xyz*DELTA_T*DELTA_T/2;
     // estimate future position
     //   future_pos =             P_position            + move
     vec3 future_pos = Particle[particle_index-1][0].xyz + move;
@@ -99,6 +99,8 @@ void EulerMethod(){
             barrier();
             atomicAdd(Voxel[(left_voxel_id-1)*320+32+96+96+i%96], particle_index);  // starts from 1 (domain particle)
             barrier();
+            // set particle vertex_id to the new one
+            Particle[particle_index-1][0].w = float(left_voxel_id);
         }
         // right
         else if(flag==ivec3(1, 0, 0)){
@@ -109,6 +111,8 @@ void EulerMethod(){
             barrier();
             atomicAdd(Voxel[(right_voxel_id-1)*320+32+96+96+i%96], particle_index);  // starts from 1 (domain particle)
             barrier();
+            // set particle vertex_id to the new one
+            Particle[particle_index-1][0].w = float(right_voxel_id);
         }
         // down
         else if(flag==ivec3(0, -1, 0)){
@@ -119,6 +123,8 @@ void EulerMethod(){
             barrier();
             atomicAdd(Voxel[(down_voxel_id-1)*320+32+96+96+i%96], particle_index);  // starts from 1 (domain particle)
             barrier();
+            // set particle vertex_id to the new one
+            Particle[particle_index-1][0].w = float(down_voxel_id);
         }
         // up
         else if(flag==ivec3(0, 1, 0)){
@@ -129,6 +135,8 @@ void EulerMethod(){
             barrier();
             atomicAdd(Voxel[(up_voxel_id-1)*320+32+96+96+i%96], particle_index);  // starts from 1 (domain particle)
             barrier();
+            // set particle vertex_id to the new one
+            Particle[particle_index-1][0].w = float(up_voxel_id);
         }
         // back
         else if(flag==ivec3(0, 0, -1)){
@@ -139,6 +147,8 @@ void EulerMethod(){
             barrier();
             atomicAdd(Voxel[(back_voxel_id-1)*320+32+96+96+i%96], particle_index);  // starts from 1 (domain particle)
             barrier();
+            // set particle vertex_id to the new one
+            Particle[particle_index-1][0].w = float(back_voxel_id);
         }
         // front
         else if(flag==ivec3(0, 0, 1)){
@@ -149,6 +159,8 @@ void EulerMethod(){
             barrier();
             atomicAdd(Voxel[(front_voxel_id-1)*320+32+96+96+i%96], particle_index);  // starts from 1 (domain particle)
             barrier();
+            // set particle vertex_id to the new one
+            Particle[particle_index-1][0].w = float(front_voxel_id);
         }
         // left_down
         else if(flag==ivec3(-1, -1, 0)){
@@ -159,6 +171,8 @@ void EulerMethod(){
             barrier();
             atomicAdd(Voxel[(left_down_voxel_id-1)*320+32+96+96+i%96], particle_index);  // starts from 1 (domain particle)
             barrier();
+            // set particle vertex_id to the new one
+            Particle[particle_index-1][0].w = float(left_down_voxel_id);
         }
         // left_up
         else if(flag==ivec3(-1, 1, 0)){
@@ -169,6 +183,8 @@ void EulerMethod(){
             barrier();
             atomicAdd(Voxel[(left_up_voxel_id-1)*320+32+96+96+i%96], particle_index);  // starts from 1 (domain particle)
             barrier();
+            // set particle vertex_id to the new one
+            Particle[particle_index-1][0].w = float(left_up_voxel_id);
         }
         // right_down
         else if(flag==ivec3(1, -1, 0)){
@@ -179,6 +195,8 @@ void EulerMethod(){
             barrier();
             atomicAdd(Voxel[(right_down_voxel_id-1)*320+32+96+96+i%96], particle_index);  // starts from 1 (domain particle)
             barrier();
+            // set particle vertex_id to the new one
+            Particle[particle_index-1][0].w = float(right_down_voxel_id);
         }
         // right_up
         else if(flag==ivec3(1, 1, 0)){
@@ -189,6 +207,8 @@ void EulerMethod(){
             barrier();
             atomicAdd(Voxel[(right_up_voxel_id-1)*320+32+96+96+i%96], particle_index);  // starts from 1 (domain particle)
             barrier();
+            // set particle vertex_id to the new one
+            Particle[particle_index-1][0].w = float(right_up_voxel_id);
         }
         // left_back
         else if(flag==ivec3(-1, 0, -1)){
@@ -199,6 +219,8 @@ void EulerMethod(){
             barrier();
             atomicAdd(Voxel[(left_back_voxel_id-1)*320+32+96+96+i%96], particle_index);  // starts from 1 (domain particle)
             barrier();
+            // set particle vertex_id to the new one
+            Particle[particle_index-1][0].w = float(left_back_voxel_id);
         }
         // left_front
         else if(flag==ivec3(-1, 0, 1)){
@@ -209,6 +231,8 @@ void EulerMethod(){
             barrier();
             atomicAdd(Voxel[(left_front_voxel_id-1)*320+32+96+96+i%96], particle_index);  // starts from 1 (domain particle)
             barrier();
+            // set particle vertex_id to the new one
+            Particle[particle_index-1][0].w = float(left_front_voxel_id);
         }
         // right_back
         else if(flag==ivec3(1, 0, -1)){
@@ -219,6 +243,8 @@ void EulerMethod(){
             barrier();
             atomicAdd(Voxel[(right_back_voxel_id-1)*320+32+96+96+i%96], particle_index);  // starts from 1 (domain particle)
             barrier();
+            // set particle vertex_id to the new one
+            Particle[particle_index-1][0].w = float(right_back_voxel_id);
         }
         // right_front
         else if(flag==ivec3(1, 0, 1)){
@@ -229,6 +255,8 @@ void EulerMethod(){
             barrier();
             atomicAdd(Voxel[(right_front_voxel_id-1)*320+32+96+96+i%96], particle_index);  // starts from 1 (domain particle)
             barrier();
+            // set particle vertex_id to the new one
+            Particle[particle_index-1][0].w = float(right_front_voxel_id);
         }
         // down_back
         else if(flag==ivec3(0, -1, -1)){
@@ -239,6 +267,8 @@ void EulerMethod(){
             barrier();
             atomicAdd(Voxel[(down_back_voxel_id-1)*320+32+96+96+i%96], particle_index);  // starts from 1 (domain particle)
             barrier();
+            // set particle vertex_id to the new one
+            Particle[particle_index-1][0].w = float(down_back_voxel_id);
         }
         // down_front
         else if(flag==ivec3(0, -1, 1)){
@@ -249,6 +279,8 @@ void EulerMethod(){
             barrier();
             atomicAdd(Voxel[(down_front_voxel_id-1)*320+32+96+96+i%96], particle_index);  // starts from 1 (domain particle)
             barrier();
+            // set particle vertex_id to the new one
+            Particle[particle_index-1][0].w = float(down_front_voxel_id);
         }
         // up_back
         else if(flag==ivec3(0, 1, -1)){
@@ -259,6 +291,8 @@ void EulerMethod(){
             barrier();
             atomicAdd(Voxel[(up_back_voxel_id-1)*320+32+96+96+i%96], particle_index);  // starts from 1 (domain particle)
             barrier();
+            // set particle vertex_id to the new one
+            Particle[particle_index-1][0].w = float(up_back_voxel_id);
         }
         // up_front
         else if(flag==ivec3(0, 1, 1)){
@@ -269,6 +303,8 @@ void EulerMethod(){
             barrier();
             atomicAdd(Voxel[(up_front_voxel_id-1)*320+32+96+96+i%96], particle_index);  // starts from 1 (domain particle)
             barrier();
+            // set particle vertex_id to the new one
+            Particle[particle_index-1][0].w = float(up_front_voxel_id);
         }
         // left_down_back
         else if(flag==ivec3(-1, -1, -1)){
@@ -279,6 +315,8 @@ void EulerMethod(){
             barrier();
             atomicAdd(Voxel[(left_down_back_voxel_id-1)*320+32+96+96+i%96], particle_index);  // starts from 1 (domain particle)
             barrier();
+            // set particle vertex_id to the new one
+            Particle[particle_index-1][0].w = float(left_down_back_voxel_id);
         }
         // left_down_front
         else if(flag==ivec3(-1, -1, 1)){
@@ -289,6 +327,8 @@ void EulerMethod(){
             barrier();
             atomicAdd(Voxel[(left_down_front_voxel_id-1)*320+32+96+96+i%96], particle_index);  // starts from 1 (domain particle)
             barrier();
+            // set particle vertex_id to the new one
+            Particle[particle_index-1][0].w = float(left_down_front_voxel_id);
         }
         // left_up_back
         else if(flag==ivec3(-1, 1, -1)){
@@ -299,6 +339,8 @@ void EulerMethod(){
             barrier();
             atomicAdd(Voxel[(left_up_back_voxel_id-1)*320+32+96+96+i%96], particle_index);  // starts from 1 (domain particle)
             barrier();
+            // set particle vertex_id to the new one
+            Particle[particle_index-1][0].w = float(left_up_back_voxel_id);
         }
         // left_up_front
         else if(flag==ivec3(-1, 1, 1)){
@@ -309,6 +351,8 @@ void EulerMethod(){
             barrier();
             atomicAdd(Voxel[(left_up_front_voxel_id-1)*320+32+96+96+i%96], particle_index);  // starts from 1 (domain particle)
             barrier();
+            // set particle vertex_id to the new one
+            Particle[particle_index-1][0].w = float(left_up_front_voxel_id);
         }
         // right_down_back
         else if(flag==ivec3(1, -1, -1)){
@@ -319,6 +363,8 @@ void EulerMethod(){
             barrier();
             atomicAdd(Voxel[(right_down_back_voxel_id-1)*320+32+96+96+i%96], particle_index);  // starts from 1 (domain particle)
             barrier();
+            // set particle vertex_id to the new one
+            Particle[particle_index-1][0].w = float(right_down_back_voxel_id);
         }
         // right_down_front
         else if(flag==ivec3(1, -1, 1)){
@@ -329,6 +375,8 @@ void EulerMethod(){
             barrier();
             atomicAdd(Voxel[(right_down_front_voxel_id-1)*320+32+96+96+i%96], particle_index);  // starts from 1 (domain particle)
             barrier();
+            // set particle vertex_id to the new one
+            Particle[particle_index-1][0].w = float(right_down_front_voxel_id);
         }
         // right_up_back
         else if(flag==ivec3(1, 1, -1)){
@@ -339,6 +387,8 @@ void EulerMethod(){
             barrier();
             atomicAdd(Voxel[(right_up_back_voxel_id-1)*320+32+96+96+i%96], particle_index);  // starts from 1 (domain particle)
             barrier();
+            // set particle vertex_id to the new one
+            Particle[particle_index-1][0].w = float(right_up_back_voxel_id);
         }
         // right_up_front
         else if(flag==ivec3(1, 1, 1)){
@@ -349,6 +399,8 @@ void EulerMethod(){
             barrier();
             atomicAdd(Voxel[(right_up_front_voxel_id-1)*320+32+96+96+i%96], particle_index);  // starts from 1 (domain particle)
             barrier();
+            // set particle vertex_id to the new one
+            Particle[particle_index-1][0].w = float(right_up_front_voxel_id);
         }
     }
 

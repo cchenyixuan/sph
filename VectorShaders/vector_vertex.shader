@@ -1,4 +1,12 @@
-#version 460 compatibility
+#version 460 core
+
+layout(location=0) in int v_index; // vertex id
+out GeometryOutput{
+    vec4 v_pos;
+    vec4 v_color;
+}g_out;
+
+
 
 layout(std430, binding=0) buffer Particles{
     // particle inside domain with x, y, z, voxel_id; vx, vy, vz, mass; rho0, p0, rho, p; r, g, b, a
@@ -25,45 +33,16 @@ layout(std430, binding=5) coherent buffer VoxelParticleOutNumbers{
 };
 
 
-layout(local_size_x=1, local_size_y=1, local_size_z=1) in;
-
-uint gid = gl_GlobalInvocationID.x;
-int particle_index = int(gid)+1;
-float particle_index_float = float(particle_index);
+uniform mat4 projection;
+uniform mat4 view;
 
 uniform int n_particle;  // particle number
 uniform int n_voxel;  // voxel number
 uniform float h;  // smooth radius
 
-uniform int id;
-
-void set_voxel_data(){
-    Voxel[id*320+31] = 100;
-    for(int i=4; i<30; ++i){
-        if(Voxel[id*320+i]!=0 && (i>=4 && i<=9)){
-            Voxel[(Voxel[id*320+i]-1)*320+31] = i;
-        }
-
-    }
-}
 
 void main() {
-    // set 0 everyone
-    for(int i=0; i<n_voxel; ++i){
-        int c = Voxel[i*320+31];
-        atomicAdd(Voxel[i*320+31], -c);
-    }
-    barrier();
-    // set 1 itself if particle inside
-    for(int i=0; i<n_voxel; ++i){
-        for(int j=0; j<96; ++j){
-            if(Voxel[i*320+32+j]>0){
-                int c = Voxel[i*320+31];
-                atomicAdd(Voxel[i*320+31], -c+1);
-            }
-        }
+    g_out.v_pos = vec4(Particle[v_index][0].xyz, 1.0); // set vertex position, w=1.0
+    g_out.v_color = vec4(Particle[v_index][2].xy/length(Particle[v_index][2].xy), 0.0, 1.0); // set vertex color use acc, w=1.0
 
-    }
-    barrier();
-    set_voxel_data();
 }

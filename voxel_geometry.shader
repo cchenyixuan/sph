@@ -20,14 +20,14 @@ void CreateCube(){
     // center of voxel
     vec4 center = g_in[0].v_pos;
     // 8 vertices
-    vec4 p1 = vec4(center.x+h/2, center.y-h/2, center.z-h/2, 1.0);
-    vec4 p2 = vec4(p1.x, p1.y+h, p1.z, 1.0);
-    vec4 p3 = vec4(p1.x-h, p1.y, p1.z, 1.0);
-    vec4 p4 = vec4(p3.x, p3.y+h, p3.z, 1.0);
-    vec4 p5 = vec4(p1.x, p1.y, p1.z+h, 1.0);
-    vec4 p6 = vec4(p5.x, p5.y+h, p5.z, 1.0);
-    vec4 p7 = vec4(p4.x, p4.y, p4.z+h, 1.0);
-    vec4 p8 = vec4(p3.x, p3.y, p3.z+h, 1.0);
+    vec4 p4 = vec4(center.x-h/2, center.y-h/2, center.z-h/2, 1.0);
+    vec4 p3 = vec4(center.x+h/2, center.y-h/2, center.z-h/2, 1.0);
+    vec4 p8 = vec4(center.x+h/2, center.y-h/2, center.z+h/2, 1.0);
+    vec4 p7 = vec4(center.x-h/2, center.y-h/2, center.z+h/2, 1.0);
+    vec4 p6 = vec4(center.x-h/2, center.y+h/2, center.z+h/2, 1.0);
+    vec4 p2 = vec4(center.x-h/2, center.y+h/2, center.z-h/2, 1.0);
+    vec4 p1 = vec4(center.x+h/2, center.y+h/2, center.z-h/2, 1.0);
+    vec4 p5 = vec4(center.x+h/2, center.y+h/2, center.z+h/2, 1.0);
 
     // vertex color
     v_color = g_in[0].v_color;

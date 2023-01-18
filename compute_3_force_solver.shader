@@ -40,7 +40,7 @@ uniform float h;  // smooth radius
 // function definitions
 
 const float PI = 3.141592653589793;
-const float REST_DENS = 15.0;
+const float REST_DENS = 1500.0;
 const float EOS_CONST = 1000.0;
 const float VISC = 10.0;
 const float DELTA_T = 0.0005;
@@ -156,6 +156,8 @@ void ComputeParticleForce(){
     vec3 f_pressure = vec3(0.0);
     vec3 f_viscosity = vec3(0.0);
     vec3 f_external = vec3(0.0, -9.8, 0.0);  // gravity
+    // neighbourhoods count
+    vec2 neighbourhood_counter = vec2(0.0, 0.0);  // .x: domain_particle; .y: boundary_particle
     // find neighbourhood vertices, i.e., P_j
     // search in same voxel
     // calculate vertices inside
@@ -172,6 +174,8 @@ void ComputeParticleForce(){
             float rij = length(xij);
             // distance less than h
             if(rij<h){
+                // counter
+                neighbourhood_counter.x += 1.0;
                 // add f_pressure and f_viscosity
                 // f_press +=        grad_spiky_3d(xij, rij, H)          * (           MASS         *(      P_j_pressure      /            P_j_rho**2           +         P_i_pressure           /                 P_i_rho**2            )) *             P_i_rho
                 f_pressure += grad_spiky_3d(xij.x, xij.y, xij.z, rij, h) * (Particle[index_j-1][1].w*(Particle[index_j-1][2].w/pow(Particle[index_j-1][2].z, 2) + Particle[particle_index-1][2].w/pow(Particle[particle_index-1][2].z, 2))) * Particle[particle_index-1][2].z;
@@ -189,6 +193,8 @@ void ComputeParticleForce(){
             float rij = length(xij);
             // distance less than h
             if(rij<h){
+                // counter
+                neighbourhood_counter.y += 1.0;
                 // add f_pressure and f_viscosity
                 // f_press +=        grad_spiky_3d(xij, rij, H)          * (               MASS             *(          P_j_pressure          /                P_j_rho**2               +         P_i_pressure           /                 P_i_rho**2            )) *             P_i_rho
                 f_pressure += grad_spiky_3d(xij.x, xij.y, xij.z, rij, h) * (BoundaryParticle[index_j-1][1].w*(BoundaryParticle[index_j-1][2].w/pow(BoundaryParticle[index_j-1][2].z, 2) + Particle[particle_index-1][2].w/pow(Particle[particle_index-1][2].z, 2))) * Particle[particle_index-1][2].z;
@@ -200,7 +206,7 @@ void ComputeParticleForce(){
     }
 
     // search in neighbourhood voxels
-    for(int i=4; i<32; ++i){
+    for(int i=4; i<30; ++i){
         // its neighbourhood voxel
         int neighborhood_id = Voxel[(voxel_id-1)*320+i];  // starts from 1
         // valid neighborhood
@@ -219,6 +225,8 @@ void ComputeParticleForce(){
                     float rij = length(xij);
                     // distance less than h
                     if(rij<h){
+                        // counter
+                        neighbourhood_counter.x += 1.0;
                         // add f_pressure and f_viscosity
                         // f_press +=        grad_spiky_3d(xij, rij, H)          * (           MASS         *(      P_j_pressure      /            P_j_rho**2           +         P_i_pressure           /                 P_i_rho**2            )) *             P_i_rho
                         f_pressure += grad_spiky_3d(xij.x, xij.y, xij.z, rij, h) * (Particle[index_j-1][1].w*(Particle[index_j-1][2].w/pow(Particle[index_j-1][2].z, 2) + Particle[particle_index-1][2].w/pow(Particle[particle_index-1][2].z, 2))) * Particle[particle_index-1][2].z;
@@ -236,6 +244,8 @@ void ComputeParticleForce(){
                     float rij = length(xij);
                     // distance less than h
                     if(rij<h){
+                        // counter
+                        neighbourhood_counter.y += 1.0;
                         // add f_pressure and f_viscosity
                         // f_press +=        grad_spiky_3d(xij, rij, H)          * (               MASS             *(          P_j_pressure          /                P_j_rho**2               +         P_i_pressure           /                 P_i_rho**2            )) *             P_i_rho
                         f_pressure += grad_spiky_3d(xij.x, xij.y, xij.z, rij, h) * (BoundaryParticle[index_j-1][1].w*(BoundaryParticle[index_j-1][2].w/pow(BoundaryParticle[index_j-1][2].z, 2) + Particle[particle_index-1][2].w/pow(Particle[particle_index-1][2].z, 2))) * Particle[particle_index-1][2].z;
@@ -251,6 +261,8 @@ void ComputeParticleForce(){
     // compute force
     //            P_i_force           = (f_pressure + f_viscosity + f_external)/rho
     Particle[particle_index-1][3].xyz = (f_pressure + f_viscosity + f_external)/Particle[particle_index-1][2].z;
+    // adapt counter to particle[i][2].xy
+    //Particle[particle_index-1][2].xy = neighbourhood_counter;
 }
 
 void main() {

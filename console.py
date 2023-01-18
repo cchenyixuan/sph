@@ -26,6 +26,8 @@ class DisplayPort:
         self.left_click = False
         self.right_click = False
         self.middle_click = False
+        self.pause = False
+        self.counter = 0
         self.camera = Camera()
 
         self.view = self.camera()
@@ -44,36 +46,38 @@ class DisplayPort:
         glUseProgram(self.demo.render_shader_boundary)
         glUniformMatrix4fv(self.demo.boundary_projection_loc, 1, GL_FALSE, self.camera.projection)
         glUniformMatrix4fv(self.demo.boundary_view_loc, 1, GL_FALSE, self.camera.view)
+        glUseProgram(self.demo.render_shader_vector)
+        glUniformMatrix4fv(self.demo.vector_projection_loc, 1, GL_FALSE, self.camera.projection)
+        glUniformMatrix4fv(self.demo.vector_view_loc, 1, GL_FALSE, self.camera.view)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glEnable(GL_DEPTH_TEST)
 
         self.track_cursor()
+        self.track_keyboard()
 
         glfw.show_window(self.window)
 
-        i = 0
         while not glfw.window_should_close(self.window):
             glfw.poll_events()
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
             # render codes
-            self.demo(i//100)
-            i += 1
-            if i > self.demo.voxel_number*100:
-                i = 0
-
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.demo.sbo_particles)
-            a0 = np.frombuffer(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, self.demo.particles.nbytes), dtype=np.float32)
-            a = np.reshape(a0, (-1, 4))
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.demo.sbo_boundary_particles)
-            b0 = np.frombuffer(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, self.demo.boundary_particles.nbytes),
-                               dtype=np.float32)
-            b = np.reshape(b0, (-1, 4))
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.demo.sbo_voxels)
-            c0 = np.frombuffer(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, self.demo.voxels.nbytes),
-                               dtype=np.int32)
-            c = np.reshape(c0, (-1, 4))
+            self.demo(self.counter, self.pause)
+            if not self.pause:
+                glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.demo.sbo_particles)
+                a0 = np.frombuffer(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, self.demo.particles.nbytes), dtype=np.float32)
+                a = np.reshape(a0, (-1, 4))
+                print(a[:16])
+            self.pause = True
+            # glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.demo.sbo_boundary_particles)
+            # b0 = np.frombuffer(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, self.demo.boundary_particles.nbytes),
+            #                    dtype=np.float32)
+            # b = np.reshape(b0, (-1, 4))
+            # glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.demo.sbo_voxels)
+            # c0 = np.frombuffer(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, self.demo.voxels.nbytes),
+            #                    dtype=np.int32)
+            # c = np.reshape(c0, (-1, 4))
             """
             total = 0
             total_after = 0
@@ -117,6 +121,8 @@ class DisplayPort:
                 glUniformMatrix4fv(self.demo.view_loc, 1, GL_FALSE, self.view)
                 glUseProgram(self.demo.render_shader_boundary)
                 glUniformMatrix4fv(self.demo.boundary_view_loc, 1, GL_FALSE, self.view)
+                glUseProgram(self.demo.render_shader_vector)
+                glUniformMatrix4fv(self.demo.vector_view_loc, 1, GL_FALSE, self.view)
                 self.view_changed = False
             # time.sleep(0.02)
 
@@ -126,7 +132,6 @@ class DisplayPort:
 
     def track_cursor(self):
         def cursor_position_clb(*args):
-            print(args[1:])
             delta = np.array(args[1:], dtype=np.float32) - self.cursor_position[:]
             self.cursor_position = args[1:]
             if self.left_click:
@@ -181,6 +186,15 @@ class DisplayPort:
         glfw.set_mouse_button_callback(self.window, mouse_press_clb)
         glfw.set_scroll_callback(self.window, scroll_clb)
         glfw.set_cursor_pos_callback(self.window, cursor_position_clb)
+
+    def track_keyboard(self):
+        def key_press_clb(window, key, scancode, action, mods):
+            if key == glfw.KEY_SPACE and action == glfw.PRESS:
+                self.pause = not self.pause
+            if key == glfw.KEY_ENTER and action == glfw.PRESS:
+                self.counter += 1
+                self.counter %= self.demo.voxel_number
+        glfw.set_key_callback(self.window, key_press_clb)
 
 
 if __name__ == "__main__":

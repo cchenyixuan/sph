@@ -32,8 +32,8 @@ uniform mat4 view;
 void main() {
     gl_Position = projection*view*vec4(Particle[v_index][0].xyz, 1.0); // set vertex position, w=1.0
     int voxel_id = int(round(Particle[v_index][0].w));
-    // vec3 voxel_center = vec3(float(Voxel[(voxel_id-1)*320+1])*h, float(Voxel[(voxel_id-1)*320+2])*h, float(Voxel[(voxel_id-1)*320+3])*h);
+    vec3 voxel_center = vec3(float(Voxel[(voxel_id-1)*320+1])*h, float(Voxel[(voxel_id-1)*320+2])*h, float(Voxel[(voxel_id-1)*320+3])*h);
     // float l = length(Particle[v_index][3].xyz);
-    v_color = vec4(0.5, 0.5, 1.0, 0.3); // set output color by its voxel id
+    v_color = vec4(abs(Particle[v_index][3].xyz), 1.0); // set output color by its acc
     //v_color = vec4(abs(sin(float(voxel_id/2))), abs(cos(float(voxel_id/3))), abs(sin(float(voxel_id/5))), 0.3);
 }

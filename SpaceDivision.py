@@ -23,9 +23,9 @@ class CreateVoxels:
             # domain_mat[i, 0, :] = [index, (i % (x * y) // y) * self.h, (i % (x * y) % y) * self.h,
             #                        i // (x * y) * self.h]
             # int version
-            domain_mat[i, 0, :] = [index, (i % (x * y) // y), (i % (x * y) % y), i // (x * y)]
-            front = max(0, index - (x * y))
-            back = 0 if index + (x * y) > n else index + (x * y)
+            domain_mat[i, 0, :] = [index, (i % (x * y) % y), (i % (x * y) // y), i // (x * y)]
+            back = max(0, index - (x * y))
+            front = 0 if index + (x * y) > n else index + (x * y)
             pt = i % (x * y)
 
             if pt == 0:
@@ -55,9 +55,9 @@ class CreateVoxels:
 
             contents = np.zeros((2, 8), dtype=np.float32)
             if back != 0:
-                contents[0, :] = [pos + x * y if pos != 0 else 0 for pos in buf]
+                contents[0, :] = [pos - x * y if pos != 0 else 0 for pos in buf]
             if front != 0:
-                contents[1, :] = [pos - x * y if pos != 0 else 0 for pos in buf]
+                contents[1, :] = [pos + x * y if pos != 0 else 0 for pos in buf]
             contents = contents.T
             contents = contents.reshape(16)
             contents = np.hstack((buf[:4], back, front, buf[4:], contents, 0, 0))
@@ -75,6 +75,18 @@ class CreateVoxels:
             Front = (0, 0, 1)
             and other combinations of above, i.e.
             LeftUpBack = (-1, 1, -1) = Left + Up + Back
+            
+            re_arrange = [
+                ["i", "x", "y", "z"],0-3
+                [(-1, 0, 0), (1, 0, 0), (0, -1, 0), (0, 1, 0)],4-7
+                [(0, 0, -1), (0, 0, 1), (-1, -1, 0), (-1, 1, 0)],8-11
+                [(1, -1, 0), (1, 1, 0), (-1, 0, -1), (-1, 0, 1)],12-15
+                [(1, 0, -1), (1, 0, 1), (0, -1, -1), (0, -1, 1)],16-19
+                [(0, 1, -1), (0, 1, 1), (-1, -1, -1), (-1, -1, 1)],20-23
+                [(-1, 1, -1), (-1, 1, 1), (1, -1, -1)", (1, -1, 1)],24-27
+                [(1, 1, -1), (1, 1, 1), "0", "0"],28-31
+            ]
+            
             """
             re_arrange = [
                 ["i", "x", "y", "z"],
@@ -123,7 +135,7 @@ class CreateParticles:
                     # particle id
                     particle_id = i*n_y*n_z + j*n_z + k
                     # assign a particle to its location with a random offset in scale [-r/10, r/10]
-                    domain_particle_mat[particle_id][0, :3] = start_point + np.array((i*self.r*2+self.r, j*self.r*2+self.r, k*self.r*2+self.r), dtype=np.float32) + ((np.random.ranf(3)-0.50)*2)*(0.1*self.r)
+                    domain_particle_mat[particle_id][0, :3] = start_point + np.array((i*self.r*2+self.r, j*self.r*2+self.r, k*self.r*2+self.r), dtype=np.float32)# + ((np.random.ranf(3)-0.50)*2)*(0.1*self.r)
                     # assign initial mass
                     domain_particle_mat[particle_id][1, 3] = 0.27
                     # assign initial velocity
@@ -228,9 +240,9 @@ class CreateBoundaryParticles:
 
 
 if __name__ == "__main__":
-    H = 1.0
+    H = 0.25
     R = 0.2
-    Domain = [[-2, -1, -3], [0, 1, 0], [0, 0, 1], [0, 1, 1], [1, 0, 0], [1, 0, 1], [1, 1, 0], [3, 1, 3]]  # 8x3
+    Domain = [[0,0,0], [1,1,1]]  # 8x3
     voxels = CreateVoxels(domain=Domain, h=H)()
     print(voxels)
     print(voxels.shape)

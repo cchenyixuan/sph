@@ -44,10 +44,19 @@ uniform float h;  // smooth radius
 void main() {
     g_out.v_pos = vec4(float(Voxel[v_index*320+1])*h, float(Voxel[v_index*320+2])*h, float(Voxel[v_index*320+3])*h, 1.0);
     vec4 color = vec4(0.0);
-    if(Voxel[v_index*320+319]==0){color = vec4(0.5, 0.0, 0.0, 0.3);}
-    if(Voxel[v_index*320+319]==1){color = vec4(0.0, 0.5, 1.0, 1.0);}
-    if(Voxel[v_index*320+319]==2){color = vec4(0.0, 1.0, 0.5, 0.5);}
-    if(Voxel[v_index*320+319]==4){color = vec4(1.0, 1.0, 0.2, 0.5);}
+    if(Voxel[v_index*320+31]==0){color = vec4(1.0, 1.0, 0.0, 0.3);}
+    else if(Voxel[v_index*320+31]==1){color = vec4(0.0, 0.5, 1.0, 0.5);}
+    else if(Voxel[v_index*320+31]==2){color = vec4(0.0, 1.0, 0.5, 0.5);}
+    else if(Voxel[v_index*320+31]==3){color = vec4(1.0, 1.0, 0.2, 0.5);}
+    else if(Voxel[v_index*320+31]==4){
+        // left
+        color = vec4(0.5, 0.5, 0.0, 1.0);
+    }
+    else if(Voxel[v_index*320+31]==8){
+        // right
+        color = vec4(1.0, 0.0, 0.0, 1.0);
+    }
+
     g_out.v_color = color;
 
 }
