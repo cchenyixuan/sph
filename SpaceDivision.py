@@ -129,6 +129,8 @@ class CreateParticles:
 
         domain_particle_mat = np.zeros((n_x*n_y*n_z, 4, 4), dtype=np.float32)
 
+        expected_mass = ((x_end-x_start+2*self.r)*(y_end-y_start+2*self.r)*(z_end-z_start+2*self.r))/(n_x*n_y*n_z)
+
         for i in range(n_x):
             for j in range(n_y):
                 for k in range(n_z):
@@ -137,13 +139,14 @@ class CreateParticles:
                     # assign a particle to its location with a random offset in scale [-r/10, r/10]
                     domain_particle_mat[particle_id][0, :3] = start_point + np.array((i*self.r*2+self.r, j*self.r*2+self.r, k*self.r*2+self.r), dtype=np.float32)# + ((np.random.ranf(3)-0.50)*2)*(0.1*self.r)
                     # assign initial mass
-                    domain_particle_mat[particle_id][1, 3] = 0.27
+                    domain_particle_mat[particle_id][1, 3] = expected_mass
                     # assign initial velocity
 
                     # assign initial density
                     # assign initial pressure
                     # assign initial color
         output_domain_particle_mat = np.vstack((particle_mat for particle_mat in domain_particle_mat))
+        print(expected_mass)
         return output_domain_particle_mat
 
 
