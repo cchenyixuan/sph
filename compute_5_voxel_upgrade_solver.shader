@@ -9,9 +9,9 @@ layout(std430, binding=1) buffer BoundaryParticles{
     mat4x4 BoundaryParticle[];
 };
 layout(std430, binding=2) coherent buffer Voxels{
-    // each voxel has 20 mat44 and first 2 matrices contains its id, x_offset of h, y_offset of h, z_offset of h; and neighborhood voxel ids
-    // other 18 matrices containing current-indoor-particle-ids, particles getting out and particles stepping in
-    // matrices are changed into integer arrays to apply atomic operations, first 32 integers for first 2 matrices and one voxel costs 320 integers
+    // each voxel has 182 mat44 and first 2 matrices contains its id, x_offset of h, y_offset of h, z_offset of h; and neighborhood voxel ids
+    // other 180 matrices containing current-indoor-particle-ids, particles getting out and particles stepping in
+    // matrices are changed into integer arrays to apply atomic operations, first 32 integers for first 2 matrices and one voxel costs 2912 integers
     int Voxel[];
 };
 layout(std430, binding=3) coherent buffer VoxelParticleNumbers{
@@ -37,21 +37,24 @@ uniform int n_voxel;  // voxel number
 uniform float h;  // smooth radius
 
 
+const int voxel_memory_length = 2912;
+const int voxel_block_size = 960;
+
 
 void UpgradeVoxel(){
     // create a counter to check all out buffer has been considered
     int out_counter = 0;
-    for(int i=0; i<96; ++i){
+    for(int i=0; i<voxel_block_size; ++i){
         // read out buffer, out buffer is continuous
-        int out_particle_id = Voxel[(voxel_index-1)*320+32+96+i%96];  // starts from 1
+        int out_particle_id = Voxel[(voxel_index-1)*voxel_memory_length+32+voxel_block_size+i%voxel_block_size];  // starts from 1
         // if zero found, iteration should stop
         if(out_particle_id==0){break;}
-        for(int j=0; j<96; ++j){
+        for(int j=0; j<voxel_block_size; ++j){
             // read inside buffer and check if particle id match
-            int inside_particle_id = Voxel[(voxel_index-1)*320+32+j%96];
+            int inside_particle_id = Voxel[(voxel_index-1)*voxel_memory_length+32+j%voxel_block_size];
             if(inside_particle_id==out_particle_id){
                 // erase voxel particle slot and add counter
-                Voxel[(voxel_index-1)*320+32+j%96] = 0;
+                Voxel[(voxel_index-1)*voxel_memory_length+32+j%voxel_block_size] = 0;
                 out_counter += 1;
                 // break
                 break;
@@ -67,16 +70,16 @@ void UpgradeVoxel(){
     }
     // create a counter to check all in buffer has been considered
     int in_counter = 0;
-    for(int i=0; i<96; ++i){
+    for(int i=0; i<voxel_block_size; ++i){
         // read in buffer, in buffer is continuous
-        int in_particle_id = Voxel[(voxel_index-1)*320+32+96+96+i%96];  // starts from 1
+        int in_particle_id = Voxel[(voxel_index-1)*voxel_memory_length+32+voxel_block_size+voxel_block_size+i%voxel_block_size];  // starts from 1
         // if zero found, iteration should stop
         if(in_particle_id==0){break;}
-        for(int j=0; j<96; ++j){
+        for(int j=0; j<voxel_block_size; ++j){
             // read inside buffer and check if a slot is found
-            if(Voxel[(voxel_index-1)*320+32+j%96]==0){
+            if(Voxel[(voxel_index-1)*voxel_memory_length+32+j%voxel_block_size]==0){
                 // insert voxel particle slot and add counter
-                Voxel[(voxel_index-1)*320+32+j%96] = in_particle_id;
+                Voxel[(voxel_index-1)*voxel_memory_length+32+j%voxel_block_size] = in_particle_id;
                 in_counter += 1;
                 // break
                 break;
@@ -94,15 +97,15 @@ void UpgradeVoxel(){
     // re-arrange inside buffer using 2 pointers
     int ptr1 = 0;  // slow
     int ptr2 = 0;  // fast
-    while(ptr2<96){
-        if(Voxel[(voxel_index-1)*320+32+ptr2%96]==0){
+    while(ptr2<voxel_block_size){
+        if(Voxel[(voxel_index-1)*voxel_memory_length+32+ptr2%voxel_block_size]==0){
             // empty slot found
             ptr2 += 1;
         }
-        else if(Voxel[(voxel_index-1)*320+32+ptr2%96]!=0 && ptr1!=ptr2){
+        else if(Voxel[(voxel_index-1)*voxel_memory_length+32+ptr2%voxel_block_size]!=0 && ptr1!=ptr2){
             // filled slot found
-            Voxel[(voxel_index-1)*320+32+ptr1%96] = Voxel[(voxel_index-1)*320+32+ptr2%96];
-            Voxel[(voxel_index-1)*320+32+ptr2%96] = 0;
+            Voxel[(voxel_index-1)*voxel_memory_length+32+ptr1%voxel_block_size] = Voxel[(voxel_index-1)*voxel_memory_length+32+ptr2%voxel_block_size];
+            Voxel[(voxel_index-1)*voxel_memory_length+32+ptr2%voxel_block_size] = 0;
             ptr1 += 1;
         }
         else{
@@ -116,10 +119,10 @@ void UpgradeVoxel(){
     int ptr1 = 0;
     int ptr2 = 95;
     while(ptr1<ptr2){
-        if(Voxel[(voxel_index-1)*320+32+ptr1%96]==0){
-            if(Voxel[(voxel_index-1)*320+32+ptr2%96]!=0){
-                Voxel[(voxel_index-1)*320+32+ptr1%96] = Voxel[(voxel_index-1)*320+32+ptr2%96];
-                Voxel[(voxel_index-1)*320+32+ptr2%96] = 0;
+        if(Voxel[(voxel_index-1)*voxel_memory_length+32+ptr1%voxel_block_size]==0){
+            if(Voxel[(voxel_index-1)*voxel_memory_length+32+ptr2%voxel_block_size]!=0){
+                Voxel[(voxel_index-1)*voxel_memory_length+32+ptr1%voxel_block_size] = Voxel[(voxel_index-1)*voxel_memory_length+32+ptr2%voxel_block_size];
+                Voxel[(voxel_index-1)*voxel_memory_length+32+ptr2%voxel_block_size] = 0;
             }
             else{
                 ptr2 -= 1;
@@ -132,12 +135,12 @@ void UpgradeVoxel(){
     */
 
     // all out particles have been checked, clear out buffer
-    for(int i=0; i<96; ++i){
-        Voxel[(voxel_index-1)*320+32+96+i%96] = 0;
+    for(int i=0; i<voxel_block_size; ++i){
+        Voxel[(voxel_index-1)*voxel_memory_length+32+voxel_block_size+i%voxel_block_size] = 0;
     }
     // all in particles have been checked, clear in buffer
-    for(int i=0; i<96; ++i){
-        Voxel[(voxel_index-1)*320+32+96+96+i%96] = 0;
+    for(int i=0; i<voxel_block_size; ++i){
+        Voxel[(voxel_index-1)*voxel_memory_length+32+voxel_block_size+voxel_block_size+i%voxel_block_size] = 0;
     }
     // re-calculate VoxelParticleNumber and clear VoxelParticleInNumber and VoxelParticleOutNumber
     VoxelParticleNumber[voxel_index-1] += -VoxelParticleOutNumber[voxel_index-1]+VoxelParticleInNumber[voxel_index-1];

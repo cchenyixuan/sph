@@ -16,7 +16,7 @@ class CreateVoxels:
         z = math.ceil((max(self.domain[:, 2]) - min(self.domain[:, 2])) / self.h) + 1
         n = x * y * z
 
-        domain_mat = np.zeros((n, 80, 4), dtype=np.int32)
+        domain_mat = np.zeros((n, 182*4, 4), dtype=np.int32)
         for i in range(n):
             index = i + 1
             # float version

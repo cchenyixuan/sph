@@ -9,9 +9,9 @@ layout(std430, binding=1) buffer BoundaryParticles{
     mat4x4 BoundaryParticle[];
 };
 layout(std430, binding=2) coherent buffer Voxels{
-    // each voxel has 20 mat44 and first 2 matrices contains its id, x_offset of h, y_offset of h, z_offset of h; and neighborhood voxel ids
-    // other 18 matrices containing current-indoor-particle-ids, particles getting out and particles stepping in
-    // matrices are changed into integer arrays to apply atomic operations, first 32 integers for first 2 matrices and one voxel costs 320 integers
+    // each voxel has 182 mat44 and first 2 matrices contains its id, x_offset of h, y_offset of h, z_offset of h; and neighborhood voxel ids
+    // other 180 matrices containing current-indoor-particle-ids, particles getting out and particles stepping in
+    // matrices are changed into integer arrays to apply atomic operations, first 32 integers for first 2 matrices and one voxel costs 2912 integers
     int Voxel[];
 };
 layout(std430, binding=3) coherent buffer VoxelParticleNumbers{
@@ -35,16 +35,18 @@ uniform int n_particle;  // particle number
 uniform int n_voxel;  // voxel number
 uniform float h;  // smooth radius
 
+const int voxel_memory_length = 2912;
+const int voxel_block_size = 960;
 
 
-// TODO: compute shader 1 not modified, require update and could not compile
+
 void AllocateBoundaryParticles(){
     // position of current particle focused
     vec3 particle_pos = BoundaryParticle[particle_index-1][0].xyz;
     // for all voxels
     for(int i=0; i < n_voxel; ++i){
         // current voxel center position
-        vec3 voxel_pos = vec3(float(Voxel[i*320+1])*h, float(Voxel[i*320+2])*h, float(Voxel[i*320+3])*h);
+        vec3 voxel_pos = vec3(float(Voxel[i*voxel_memory_length+1])*h, float(Voxel[i*voxel_memory_length+2])*h, float(Voxel[i*voxel_memory_length+3])*h);
         // current particle inside current voxel (vx-2/h<=px<vx+2/h)
         if(
             voxel_pos.x-h/2<=particle_pos.x && particle_pos.x<voxel_pos.x+h/2 &&
@@ -55,7 +57,7 @@ void AllocateBoundaryParticles(){
                 int c = atomicAdd(VoxelParticleNumber[i], 1);
                 barrier();
                 // set slot with index value
-                atomicAdd(Voxel[i*320+32+c%96], -particle_index);  // starts from -1 (boundary particle)
+                atomicAdd(Voxel[i*voxel_memory_length+32+c%voxel_block_size], -particle_index);  // starts from -1 (boundary particle)
                 barrier();
                 // set particle's voxel id
                 BoundaryParticle[particle_index-1][0].w = float(i+1);  // starts from 1.0

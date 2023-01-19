@@ -22,7 +22,7 @@ class Demo:
         self.boundary_particles = CreateBoundaryParticles(domain=self.Domain, h=self.H, r=self.R)()
         print(self.boundary_particles.shape, "boundary particle {}s".format(time.time()-t))
 
-        self.voxel_number = self.voxels.shape[0] // 80  # (n * 80, 4)
+        self.voxel_number = self.voxels.shape[0] // (182*4)  # (n * (182*4), 4)
         self.particle_number = self.particles.shape[0] // 4  # (n * 4, 4)
         self.boundary_particle_number = self.boundary_particles.shape[0] // 4
 
