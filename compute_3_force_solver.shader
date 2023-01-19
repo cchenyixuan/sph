@@ -183,7 +183,8 @@ void ComputeParticleForce(){
                 // f_press +=        grad_spiky_3d(xij, rij, H)          * (           MASS         *(      P_j_pressure      /            P_j_rho**2           +         P_i_pressure           /                 P_i_rho**2            )) *             P_i_rho
                 f_pressure += grad_spiky_3d(xij.x, xij.y, xij.z, rij, h) * (Particle[index_j-1][1].w*(Particle[index_j-1][2].w/pow(Particle[index_j-1][2].z, 2) + Particle[particle_index-1][2].w/pow(Particle[particle_index-1][2].z, 2))) * Particle[particle_index-1][2].z;
                 // f_visco  += VISC * (         P_j_mass        /         P_j_rho         ) * (        P_j_velocity       -            P_i_velocity          ) * lap_viscosity_3d(rij, h)
-                f_viscosity += VISC * (Particle[index_j-1][1].w / Particle[index_j-1][2].w) * (Particle[index_j-1][1].xyz - Particle[particle_index-1][1].xyz) * lap_viscosity_3d(rij, h);
+                // f_viscosity += VISC * (Particle[index_j-1][1].w / Particle[index_j-1][2].w) * (Particle[index_j-1][1].xyz - Particle[particle_index-1][1].xyz) * lap_viscosity_3d(rij, h);
+                f_viscosity += Particle[particle_index-1][1].w*VISC*(Particle[index_j-1][1].w/Particle[index_j-1][2].z)*(Particle[index_j-1][1].xyz - Particle[particle_index-1][1].xyz)*(2*lap_viscosity_3d(rij, h)/rij);
             }
         }
         // P_j is a boundary particle
@@ -202,7 +203,8 @@ void ComputeParticleForce(){
                 // f_press +=        grad_spiky_3d(xij, rij, H)          * (               MASS             *(          P_j_pressure          /                P_j_rho**2               +         P_i_pressure           /                 P_i_rho**2            )) *             P_i_rho
                 f_pressure += grad_spiky_3d(xij.x, xij.y, xij.z, rij, h) * (BoundaryParticle[index_j-1][1].w*(BoundaryParticle[index_j-1][2].w/pow(BoundaryParticle[index_j-1][2].z, 2) + Particle[particle_index-1][2].w/pow(Particle[particle_index-1][2].z, 2))) * Particle[particle_index-1][2].z;
                 // f_visco  += VISC * (             P_j_mass            /             P_j_rho             ) * (            P_j_velocity           -            P_i_velocity          ) * lap_viscosity_3d(rij, h)
-                f_viscosity += VISC * (BoundaryParticle[index_j-1][1].w / BoundaryParticle[index_j-1][2].w) * (BoundaryParticle[index_j-1][1].xyz - Particle[particle_index-1][1].xyz) * lap_viscosity_3d(rij, h);
+                // f_viscosity += VISC * (BoundaryParticle[index_j-1][1].w / BoundaryParticle[index_j-1][2].w) * (BoundaryParticle[index_j-1][1].xyz - Particle[particle_index-1][1].xyz) * lap_viscosity_3d(rij, h);
+                f_viscosity += Particle[particle_index-1][1].w*VISC*(BoundaryParticle[index_j-1][1].w/BoundaryParticle[index_j-1][2].z)*(BoundaryParticle[index_j-1][1].xyz - Particle[particle_index-1][1].xyz)*(2*lap_viscosity_3d(rij, h)/rij);
             }
         }
 
@@ -234,7 +236,9 @@ void ComputeParticleForce(){
                         // f_press +=        grad_spiky_3d(xij, rij, H)          * (           MASS         *(      P_j_pressure      /            P_j_rho**2           +         P_i_pressure           /                 P_i_rho**2            )) *             P_i_rho
                         f_pressure += grad_spiky_3d(xij.x, xij.y, xij.z, rij, h) * (Particle[index_j-1][1].w*(Particle[index_j-1][2].w/pow(Particle[index_j-1][2].z, 2) + Particle[particle_index-1][2].w/pow(Particle[particle_index-1][2].z, 2))) * Particle[particle_index-1][2].z;
                         // f_visco  += VISC * (         P_j_mass        /         P_j_rho         ) * (        P_j_velocity       -            P_i_velocity          ) * lap_viscosity_3d(rij, h)
-                        f_viscosity += VISC * (Particle[index_j-1][1].w / Particle[index_j-1][2].w) * (Particle[index_j-1][1].xyz - Particle[particle_index-1][1].xyz) * lap_viscosity_3d(rij, h);
+                        // f_viscosity += VISC * (Particle[index_j-1][1].w / Particle[index_j-1][2].w) * (Particle[index_j-1][1].xyz - Particle[particle_index-1][1].xyz) * lap_viscosity_3d(rij, h);
+                        f_viscosity += Particle[particle_index-1][1].w*VISC*(Particle[index_j-1][1].w/Particle[index_j-1][2].z)*(Particle[index_j-1][1].xyz - Particle[particle_index-1][1].xyz)*(2*lap_viscosity_3d(rij, h)/rij);
+
                     }
                 }
                 // P_j is a boundary particle
@@ -253,7 +257,14 @@ void ComputeParticleForce(){
                         // f_press +=        grad_spiky_3d(xij, rij, H)          * (               MASS             *(          P_j_pressure          /                P_j_rho**2               +         P_i_pressure           /                 P_i_rho**2            )) *             P_i_rho
                         f_pressure += grad_spiky_3d(xij.x, xij.y, xij.z, rij, h) * (BoundaryParticle[index_j-1][1].w*(BoundaryParticle[index_j-1][2].w/pow(BoundaryParticle[index_j-1][2].z, 2) + Particle[particle_index-1][2].w/pow(Particle[particle_index-1][2].z, 2))) * Particle[particle_index-1][2].z;
                         // f_visco  += VISC * (             P_j_mass            /             P_j_rho             ) * (            P_j_velocity           -            P_i_velocity          ) * lap_viscosity_3d(rij, h)
-                        f_viscosity += VISC * (BoundaryParticle[index_j-1][1].w / BoundaryParticle[index_j-1][2].w) * (BoundaryParticle[index_j-1][1].xyz - Particle[particle_index-1][1].xyz) * lap_viscosity_3d(rij, h);
+                        // f_viscosity += VISC * (BoundaryParticle[index_j-1][1].w / BoundaryParticle[index_j-1][2].w) * (BoundaryParticle[index_j-1][1].xyz - Particle[particle_index-1][1].xyz) * lap_viscosity_3d(rij, h);
+                        f_viscosity += Particle[particle_index-1][1].w*VISC*(BoundaryParticle[index_j-1][1].w/BoundaryParticle[index_j-1][2].z)*(BoundaryParticle[index_j-1][1].xyz - Particle[particle_index-1][1].xyz)*(2*lap_viscosity_3d(rij, h)/rij);
+
+
+                        // f_visco = m_i*mu*lap(v_i)
+                        //lap_v_i  = sum{m_i*mu * m_j/rho_j * (vi-vj) * 2||(lap_W(ij))||/||rij||}
+                        // f_viscosity += m_i*VISC*(m_j/rho_j)*(vj-vi)*(2*lap_viscosity_3d(rij, h)/rij);
+                        // f_viscosity += Particle[particle_index-1][1].w*VISC*(Particle[index_j-1][1].w/Particle[index_j-1][2].z)*(Particle[index_j-1][1].xyz - Particle[particle_index-1][1].xyz)*(2*lap_viscosity_3d(rij, h)/rij);
                     }
                 }
 

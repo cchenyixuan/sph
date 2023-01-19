@@ -243,7 +243,7 @@ void ComputeParticleDensityPressure(){
     }
     // compute pressure by EoS
     //   P_i_pressure    = EOS_CONST * (       P_i_rho      /REST_DENS - 1)
-    Particle[particle_index-1][2].w = EOS_CONST * (Particle[particle_index-1][2].z/REST_DENS - 1);
+    Particle[particle_index-1][2].w = 2000 * (Particle[particle_index-1][2].z-REST_DENS);
     // adapt counter to particle[i][2].xy
     Particle[particle_index-1][2].xy = neighbourhood_counter;
 
