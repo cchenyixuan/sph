@@ -7,6 +7,7 @@ from OpenGL.GL import *
 import glfw
 import Demo
 from camera import Camera
+from PIL import Image
 
 
 
@@ -57,7 +58,7 @@ class DisplayPort:
         self.track_keyboard()
 
         glfw.show_window(self.window)
-
+        i = 0
         while not glfw.window_should_close(self.window):
             glfw.poll_events()
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -125,10 +126,22 @@ class DisplayPort:
                 glUniformMatrix4fv(self.demo.vector_view_loc, 1, GL_FALSE, self.view)
                 self.view_changed = False
             # time.sleep(0.02)
+            self.save_frames(f"tmp/{i}.jpg")
+            i += 1
 
             glClearColor(0.0, 0.0, 0.0, 1.0)
             glfw.swap_buffers(self.window)
         glfw.terminate()
+
+    @staticmethod
+    def save_frames(filepath):
+        x, y, width, height = glGetDoublev(GL_VIEWPORT)
+        width, height = int(width), int(height)
+        glPixelStorei(GL_PACK_ALIGNMENT, 1)
+        data = glReadPixels(x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE)
+        image = Image.frombytes("RGB", (width, height), data)
+        image = image.transpose(Image.FLIP_TOP_BOTTOM)
+        image.save(filepath, "JPEG")
 
     def track_cursor(self):
         def cursor_position_clb(*args):
