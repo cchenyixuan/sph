@@ -5,12 +5,16 @@ from OpenGL.GL.shaders import compileProgram, compileShader
 
 from SpaceDivision import CreateVoxels, CreateParticles, CreateBoundaryParticles
 import time
+from utils.float_to_fraction import find_fraction
 
 
 class Demo:
     def __init__(self):
         self.H = 0.25
         self.R = 0.25/5
+        # H = h_p/h_q and R = r_p/r_q
+        self.h_p, self.h_q = find_fraction(str(self.H))
+        self.r_p, self.r_q = find_fraction(str(self.R))
         self.Domain = [[0, 0, 0], [0, 1, 0], [0, 0, 1], [0, 1, 1], [1, 0, 0], [1, 0, 1], [1, 1, 0], [3, 3, 3]]  # 8x3
         t = time.time()
         self.voxels = CreateVoxels(domain=self.Domain, h=self.H)()
@@ -29,6 +33,10 @@ class Demo:
         self.voxel_particle_numbers = np.zeros((self.voxel_number, ), dtype=np.int32)
 
         self.indices_buffer = np.array([i for i in range(max(self.particle_number, self.boundary_particle_number))], dtype=np.int32)
+
+        # global status buffer
+        # [n_particle, n_boundary_particle, n_voxel, voxel_memory_length, voxel_block_size, h_p, h_q, r_p, r_q, max_velocity_n_times_than_r, rest_dense, eos_constant]
+        self.global_status = np.array((self.particle_number, self.boundary_particle_number, self.voxel_number, 2912, 960, self.h_p, self.h_q, self.r_p, self.r_q, 0, 1000, 276571), dtype=np.int32)
 
         # initialize OpenGL
         # particles buffer
@@ -65,6 +73,12 @@ class Demo:
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.sbo_voxel_particle_out_numbers)
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, self.sbo_voxel_particle_out_numbers)
         glNamedBufferStorage(self.sbo_voxel_particle_out_numbers, self.voxel_particle_numbers.nbytes, self.voxel_particle_numbers, GL_DYNAMIC_STORAGE_BIT)
+
+        # global_status buffer
+        self.sbo_global_status = glGenBuffers(1)
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.sbo_global_status)
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, self.sbo_global_status)
+        glNamedBufferStorage(self.sbo_global_status, self.global_status.nbytes, self.global_status, GL_DYNAMIC_STORAGE_BIT)
 
         # vao of indices
         self.vao = glGenVertexArrays(1)

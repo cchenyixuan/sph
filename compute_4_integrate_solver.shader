@@ -46,7 +46,7 @@ const float PI = 3.141592653589793;
 const float REST_DENS = 1500.0;
 const float EOS_CONST = 1000.0;
 const float VISC = 10.0;
-const float DELTA_T = 0.0005;
+const float DELTA_T = 0.00045;
 const float EPS = 0.0005;  // to control movement not too large
 
 

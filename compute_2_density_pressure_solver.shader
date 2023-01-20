@@ -44,10 +44,10 @@ const int voxel_block_size = 960;
 // function definitions
 
 const float PI = 3.141592653589793;
-const float REST_DENS = 1500.0;
-const float EOS_CONST = 1000.0;
+const float REST_DENS = 1000.0;
+const float EOS_CONST = 276571;
 const float VISC = 10.0;
-const float DELTA_T = 0.0005;
+const float DELTA_T = 0.00045;
 
 
 float h2 = h * h;
@@ -242,8 +242,9 @@ void ComputeParticleDensityPressure(){
         }
     }
     // compute pressure by EoS
-    //   P_i_pressure    = EOS_CONST * (       P_i_rho      /REST_DENS - 1)
-    Particle[particle_index-1][2].w = 2000 * (Particle[particle_index-1][2].z-REST_DENS);
+    //   P_i_pressure    = EOS_CONST * ((P_i_rho/REST_DENS)**7 - 1)
+    // EOS_CONST = rho0 * (10*v_max)**2 / gamma, where gamma = 7 in this case
+    Particle[particle_index-1][2].w = EOS_CONST * (pow(Particle[particle_index-1][2].z/REST_DENS, 7) -1);
     // adapt counter to particle[i][2].xy
     Particle[particle_index-1][2].xy = neighbourhood_counter;
 
