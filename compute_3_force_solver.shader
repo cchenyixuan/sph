@@ -318,7 +318,7 @@ void ComputeParticleForce(){
     // compute force
     //            P_i_acceleration           = (f_pressure + f_viscosity + f_external)/mass
     t_transfer -= Particle[particle_index-1][1].w*VISC_TRANSFER*2*Particle[particle_index-1][2].xyz;
-    Particle[particle_index-1][2].xyz += DELTA_T/(2*Particle[particle_index-1][1].w)*t_transfer;
+    ParticleSubData[particle_index-1][0].xyz = t_transfer;
     Particle[particle_index-1][3].xyz = (f_pressure + f_viscosity + f_external*Particle[particle_index-1][1].w + f_cohesion + f_adhesion + f_transfer)/Particle[particle_index-1][1].w;
     // adapt counter to particle[i][2].xy
     //Particle[particle_index-1][2].xy = neighbourhood_counter;
