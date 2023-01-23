@@ -29,7 +29,10 @@ layout(std430, binding=6) coherent buffer GlobalStatus{
     // [n_particle, n_boundary_particle, n_voxel, voxel_memory_length, voxel_block_size, h_p, h_q, r_p, r_q, max_velocity_n-times_than_r, rest_dense, eos_constant]
     int Status[];
 };
-
+layout(std430, binding=7) buffer ParticlesSubData{
+    // particle inside domain has additional data: t_transfer.xyz, 0.0, 0.0...;
+    mat4x4 ParticleSubData[];
+};
 
 
 layout(local_size_x=1, local_size_y=1, local_size_z=1) in;
