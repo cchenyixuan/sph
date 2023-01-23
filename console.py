@@ -28,6 +28,7 @@ class DisplayPort:
         self.right_click = False
         self.middle_click = False
         self.pause = False
+        self.show_vector = False
         self.counter = 0
         self.camera = Camera()
 
@@ -64,7 +65,7 @@ class DisplayPort:
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
             # render codes
-            self.demo(self.counter, self.pause)
+            self.demo(self.counter, False, self.show_vector)
             if not self.pause:
                 glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.demo.sbo_particles)
                 a0 = np.frombuffer(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, self.demo.particles.nbytes), dtype=np.float32)
@@ -207,6 +208,8 @@ class DisplayPort:
             if key == glfw.KEY_ENTER and action == glfw.PRESS:
                 self.counter += 1
                 self.counter %= self.demo.voxel_number
+            if key == glfw.KEY_V and action == glfw.PRESS:
+                self.show_vector = not self.show_vector
         glfw.set_key_callback(self.window, key_press_clb)
 
 

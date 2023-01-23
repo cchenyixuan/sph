@@ -10,8 +10,8 @@ from utils.float_to_fraction import find_fraction
 
 class Demo:
     def __init__(self):
-        self.H = 0.25
-        self.R = 0.25/5
+        self.H = 0.1
+        self.R = self.H/5
         # H = h_p/h_q and R = r_p/r_q
         self.h_p, self.h_q = find_fraction(str(self.H))
         self.r_p, self.r_q = find_fraction(str(self.R))
@@ -20,7 +20,7 @@ class Demo:
         self.voxels = CreateVoxels(domain=self.Domain, h=self.H)()
         print(self.voxels.shape, "voxel {}s".format(time.time()-t))
         t = time.time()
-        self.particles = CreateParticles(domain=[[0, 0, 0], [1, 1, 1]], h=self.H, r=self.R)()
+        self.particles = CreateParticles(domain=[[0.2, 0.2, 0.2], [1.2, 2.2, 1.2]], h=self.H, r=self.R)()
         print(self.particles.shape, "particle {}s".format(time.time()-t))
         t = time.time()
         self.boundary_particles = CreateBoundaryParticles(domain=self.Domain, h=self.H, r=self.R)()
@@ -36,7 +36,10 @@ class Demo:
 
         # global status buffer
         # [n_particle, n_boundary_particle, n_voxel, voxel_memory_length, voxel_block_size, h_p, h_q, r_p, r_q, max_velocity_n_times_than_r, rest_dense, eos_constant]
-        self.global_status = np.array((self.particle_number, self.boundary_particle_number, self.voxel_number, 2912, 960, self.h_p, self.h_q, self.r_p, self.r_q, 0, 1000, 276571), dtype=np.int32)
+        self.global_status = np.array((self.particle_number, self.boundary_particle_number, self.voxel_number, 2912, 960, self.h_p, self.h_q, self.r_p, self.r_q, 0, 1000, 276.571), dtype=np.int32)
+
+        # particle_sub_data_buffer
+        self.particles_sub_data = np.zeros_like(self.particles)
 
         # initialize OpenGL
         # particles buffer
@@ -79,6 +82,12 @@ class Demo:
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.sbo_global_status)
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, self.sbo_global_status)
         glNamedBufferStorage(self.sbo_global_status, self.global_status.nbytes, self.global_status, GL_DYNAMIC_STORAGE_BIT)
+
+        # particles sub data buffer
+        self.sbo_particles_sub_data = glGenBuffers(1)
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.sbo_particles_sub_data)
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, self.sbo_particles_sub_data)
+        glNamedBufferStorage(self.sbo_particles_sub_data, self.particles_sub_data.nbytes, self.particles_sub_data, GL_DYNAMIC_STORAGE_BIT)
 
         # vao of indices
         self.vao = glGenVertexArrays(1)
@@ -234,7 +243,7 @@ class Demo:
         self.voxel_projection_loc = glGetUniformLocation(self.render_shader_voxel, "projection")
         self.voxel_view_loc = glGetUniformLocation(self.render_shader_voxel, "view")
 
-    def __call__(self, i, pause):
+    def __call__(self, i, pause, show_vector=True):
         if self.need_init:
             self.need_init = False
 
@@ -268,21 +277,22 @@ class Demo:
         # glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
 
         glBindVertexArray(self.vao)
-        glUseProgram(self.render_shader_voxel)
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
-        glLineWidth(2)
-        glDrawArrays(GL_POINTS, 0, self.voxel_number)
+        # glUseProgram(self.render_shader_voxel)
+        # glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+        # glLineWidth(2)
+        # glDrawArrays(GL_POINTS, 0, self.voxel_number)
 
-        glUseProgram(self.render_shader_boundary)
-        glPointSize(4)
-        glDrawArrays(GL_POINTS, 0, self.boundary_particle_number)
+        # glUseProgram(self.render_shader_boundary)
+        # glPointSize(4)
+        # glDrawArrays(GL_POINTS, 0, self.boundary_particle_number//4)
 
         glUseProgram(self.render_shader)
-        glPointSize(15)
+        glPointSize(2)
         glDrawArrays(GL_POINTS, 0, self.particle_number)
 
-        glUseProgram(self.render_shader_vector)
-        glLineWidth(4)
-        glDrawArrays(GL_POINTS, 0, self.particle_number)
+        if show_vector:
+            glUseProgram(self.render_shader_vector)
+            glLineWidth(1)
+            glDrawArrays(GL_POINTS, 0, self.particle_number)
 
 

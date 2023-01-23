@@ -1,11 +1,11 @@
 #version 460 compatibility
 
 layout(std430, binding=0) buffer Particles{
-    // particle inside domain with x, y, z, voxel_id; vx, vy, vz, mass; rho0, p0, rho, p; r, g, b, a
+    // particle inside domain with x, y, z, voxel_id; vx, vy, vz, mass; wx, wy, wz, rho; ax, ay, az, P;
     mat4x4 Particle[];
 };
 layout(std430, binding=1) buffer BoundaryParticles{
-    // particle at boundary with x, y, z, voxel_id; vx, vy, vz, mass; rho0, p0, rho, p; r, g, b, a
+    // particle at boundary with x, y, z, voxel_id; vx, vy, vz, mass; wx, wy, wz, rho; ax, ay, az, P;
     mat4x4 BoundaryParticle[];
 };
 layout(std430, binding=2) coherent buffer Voxels{
@@ -23,6 +23,12 @@ layout(std430, binding=4) coherent buffer VoxelParticleInNumbers{
 layout(std430, binding=5) coherent buffer VoxelParticleOutNumbers{
     int VoxelParticleOutNumber[];
 };
+layout(std430, binding=6) coherent buffer GlobalStatus{
+    // simulation global settings and status such as max velocity etc.
+    // [n_particle, n_boundary_particle, n_voxel, voxel_memory_length, voxel_block_size, h_p, h_q, r_p, r_q, max_velocity_n-times_than_r, rest_dense, eos_constant]
+    int Status[];
+};
+
 
 
 layout(local_size_x=1, local_size_y=1, local_size_z=1) in;

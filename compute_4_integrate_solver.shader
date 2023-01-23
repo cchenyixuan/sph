@@ -1,11 +1,11 @@
 #version 460 compatibility
 
 layout(std430, binding=0) buffer Particles{
-    // particle inside domain with x, y, z, voxel_id; vx, vy, vz, mass; rho0, p0, rho, p; r, g, b, a
+    // particle inside domain with x, y, z, voxel_id; vx, vy, vz, mass; wx, wy, wz, rho; ax, ay, az, P;
     mat4x4 Particle[];
 };
 layout(std430, binding=1) buffer BoundaryParticles{
-    // particle at boundary with x, y, z, voxel_id; vx, vy, vz, mass; rho0, p0, rho, p; r, g, b, a
+    // particle at boundary with x, y, z, voxel_id; vx, vy, vz, mass; wx, wy, wz, rho; ax, ay, az, P;
     mat4x4 BoundaryParticle[];
 };
 layout(std430, binding=2) coherent buffer Voxels{
@@ -23,6 +23,12 @@ layout(std430, binding=4) coherent buffer VoxelParticleInNumbers{
 layout(std430, binding=5) coherent buffer VoxelParticleOutNumbers{
     int VoxelParticleOutNumber[];
 };
+layout(std430, binding=6) coherent buffer GlobalStatus{
+    // simulation global settings and status such as max velocity etc.
+    // [n_particle, n_boundary_particle, n_voxel, voxel_memory_length, voxel_block_size, h_p, h_q, r_p, r_q, max_velocity_n-times_than_r, rest_dense, eos_constant]
+    int Status[];
+};
+
 
 
 layout(local_size_x=1, local_size_y=1, local_size_z=1) in;
@@ -43,8 +49,8 @@ const int voxel_block_size = 960;
 // function definitions
 
 const float PI = 3.141592653589793;
-const float REST_DENS = 1500.0;
-const float EOS_CONST = 1000.0;
+const float REST_DENS = 700.0;
+const float EOS_CONST = 100.0;
 const float VISC = 10.0;
 const float DELTA_T = 0.00045;
 const float EPS = 0.0005;  // to control movement not too large

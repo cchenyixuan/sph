@@ -129,7 +129,7 @@ class CreateParticles:
 
         domain_particle_mat = np.zeros((n_x*n_y*n_z, 4, 4), dtype=np.float32)
 
-        expected_mass = ((x_end-x_start+2*self.r)*(y_end-y_start+2*self.r)*(z_end-z_start+2*self.r))/(n_x*n_y*n_z)
+        expected_mass = 1000*((x_end-x_start+2*self.r)*(y_end-y_start+2*self.r)*(z_end-z_start+2*self.r))/(n_x*n_y*n_z)
 
         for i in range(n_x):
             for j in range(n_y):
@@ -137,11 +137,12 @@ class CreateParticles:
                     # particle id
                     particle_id = i*n_y*n_z + j*n_z + k
                     # assign a particle to its location with a random offset in scale [-r/10, r/10]
-                    domain_particle_mat[particle_id][0, :3] = start_point + np.array((i*self.r*2+self.r, j*self.r*2+self.r, k*self.r*2+self.r), dtype=np.float32)# + ((np.random.ranf(3)-0.50)*2)*(0.1*self.r)
+                    domain_particle_mat[particle_id][0, :3] = start_point + np.array((i*self.r*2+self.r, j*self.r*2+self.r, k*self.r*2+self.r), dtype=np.float32) + ((np.random.ranf(3)-0.50)*2)*(0.1*self.r)
                     # assign initial mass
                     domain_particle_mat[particle_id][1, 3] = expected_mass
                     # assign initial velocity
-
+                    # assign initial angular velocity
+                    domain_particle_mat[particle_id][2, :3] = np.array((0.0, 0.0, 0.0), dtype=np.float32)
                     # assign initial density
                     # assign initial pressure
                     # assign initial color
@@ -201,9 +202,9 @@ class CreateBoundaryParticles:
         buffer = np.zeros((boundary_particles.shape[0] * 4, 4), dtype=np.float32)
         for step, item in enumerate(boundary_particles):
             buffer[step * 4][:3] = item
-            buffer[step * 4 + 1][3] = 10.0
-            buffer[step * 4 + 2][2:] = np.array((1500, 1000), dtype=np.float32)
-            buffer[step * 4 + 3][:] = np.array((1.0, 1.0, 1.0, 1.0), dtype=np.float32)
+            buffer[step * 4 + 1][3] = 3.0
+            buffer[step * 4 + 2][3] = 700.0
+            buffer[step * 4 + 3][:] = np.array((1.0, 1.0, 1.0, 5000.0), dtype=np.float32)
 
         return buffer
 

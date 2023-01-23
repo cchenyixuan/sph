@@ -1,11 +1,11 @@
 #version 460 compatibility
 
 layout(std430, binding=0) buffer Particles{
-    // particle inside domain with x, y, z, voxel_id; vx, vy, vz, mass; rho0, p0, rho, p; r, g, b, a
+    // particle inside domain with x, y, z, voxel_id; vx, vy, vz, mass; wx, wy, wz, rho; ax, ay, az, P;
     mat4x4 Particle[];
 };
 layout(std430, binding=1) buffer BoundaryParticles{
-    // particle at boundary with x, y, z, voxel_id; vx, vy, vz, mass; rho0, p0, rho, p; r, g, b, a
+    // particle at boundary with x, y, z, voxel_id; vx, vy, vz, mass; wx, wy, wz, rho; ax, ay, az, P;
     mat4x4 BoundaryParticle[];
 };
 layout(std430, binding=2) coherent buffer Voxels{
@@ -23,6 +23,12 @@ layout(std430, binding=4) coherent buffer VoxelParticleInNumbers{
 layout(std430, binding=5) coherent buffer VoxelParticleOutNumbers{
     int VoxelParticleOutNumber[];
 };
+layout(std430, binding=6) coherent buffer GlobalStatus{
+    // simulation global settings and status such as max velocity etc.
+    // [n_particle, n_boundary_particle, n_voxel, voxel_memory_length, voxel_block_size, h_p, h_q, r_p, r_q, max_velocity_n-times_than_r, rest_dense, eos_constant]
+    int Status[];
+};
+
 
 
 layout(local_size_x=1, local_size_y=1, local_size_z=1) in;
@@ -45,7 +51,7 @@ const int voxel_block_size = 960;
 
 const float PI = 3.141592653589793;
 const float REST_DENS = 1000.0;
-const float EOS_CONST = 276571;
+const float EOS_CONST = 276.571;
 const float VISC = 10.0;
 const float DELTA_T = 0.00045;
 
@@ -155,7 +161,8 @@ void ComputeParticleDensityPressure(){
     // position of current particle focused
     vec3 particle_pos = Particle[particle_index-1][0].xyz;
     // delete its density and pressure last time, optional
-    Particle[particle_index-1][2].zw = vec2(0.0);
+    Particle[particle_index-1][2].w = 0.0;
+    Particle[particle_index-1][3].w = 0.0;
     // neighbourhoods count
     vec2 neighbourhood_counter = vec2(0.0, 0.0);  // .x: domain_particle; .y: boundary_particle
     // voxel_id of current particle
@@ -178,7 +185,7 @@ void ComputeParticleDensityPressure(){
                 neighbourhood_counter.x += 1.0;
                 // add density to location (2, 2) of its mat4x4
                 //     P_i_rho       +=         P_j_mass       * poly6_3d(rij, h)
-                Particle[particle_index-1][2].z += Particle[index_j-1][1].w * poly6_3d(rij, h);
+                Particle[particle_index-1][2].w += Particle[index_j-1][1].w * poly6_3d(rij, h);
             }
         }
         // P_j is a boundary particle
@@ -193,7 +200,7 @@ void ComputeParticleDensityPressure(){
                 neighbourhood_counter.y += 1.0;
                 // add density to location (2, 2) of its mat4x4
                 //     P_i_rho       +=         P_j_mass       * poly6_3d(rij, h)
-                Particle[particle_index-1][2].z += BoundaryParticle[index_j-1][1].w * poly6_3d(rij, h);
+                Particle[particle_index-1][2].w += BoundaryParticle[index_j-1][1].w * poly6_3d(rij, h);
             }
         }
 
@@ -220,7 +227,7 @@ void ComputeParticleDensityPressure(){
                         neighbourhood_counter.x += 1.0;
                         // add density to location (2, 2) of its mat4x4
                         //     P_i_rho       +=         P_j_mass       * poly6_3d(rij, h)
-                        Particle[particle_index-1][2].z += Particle[index_j-1][1].w * poly6_3d(rij, h);
+                        Particle[particle_index-1][2].w += Particle[index_j-1][1].w * poly6_3d(rij, h);
                     }
                 }
                 else if(index_j<0){
@@ -234,7 +241,7 @@ void ComputeParticleDensityPressure(){
                         neighbourhood_counter.y += 1.0;
                         // add density to location (2, 2) of its mat4x4
                         //     P_i_rho       +=         P_j_mass       * poly6_3d(rij, h)
-                        Particle[particle_index-1][2].z += BoundaryParticle[index_j-1][1].w * poly6_3d(rij, h);
+                        Particle[particle_index-1][2].w += BoundaryParticle[index_j-1][1].w * poly6_3d(rij, h);
                     }
                 }
 
@@ -244,9 +251,9 @@ void ComputeParticleDensityPressure(){
     // compute pressure by EoS
     //   P_i_pressure    = EOS_CONST * ((P_i_rho/REST_DENS)**7 - 1)
     // EOS_CONST = rho0 * (10*v_max)**2 / gamma, where gamma = 7 in this case
-    Particle[particle_index-1][2].w = EOS_CONST * (pow(Particle[particle_index-1][2].z/REST_DENS, 7) -1);
+    Particle[particle_index-1][3].w = max(EOS_CONST * (pow(Particle[particle_index-1][2].w/REST_DENS, 7) -1), 0.0);
     // adapt counter to particle[i][2].xy
-    Particle[particle_index-1][2].xy = neighbourhood_counter;
+    // Particle[particle_index-1][2].xy = neighbourhood_counter;
 
 }
 

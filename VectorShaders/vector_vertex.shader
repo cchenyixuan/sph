@@ -9,11 +9,11 @@ out GeometryOutput{
 
 
 layout(std430, binding=0) buffer Particles{
-    // particle inside domain with x, y, z, voxel_id; vx, vy, vz, mass; rho0, p0, rho, p; r, g, b, a
+    // particle inside domain with x, y, z, voxel_id; vx, vy, vz, mass; wx, wy, wz, rho; ax, ay, az, P;
     mat4x4 Particle[];
 };
 layout(std430, binding=1) buffer BoundaryParticles{
-    // particle at boundary with x, y, z, voxel_id; vx, vy, vz, mass; rho0, p0, rho, p; r, g, b, a
+    // particle at boundary with x, y, z, voxel_id; vx, vy, vz, mass; wx, wy, wz, rho; ax, ay, az, P;
     mat4x4 BoundaryParticle[];
 };
 layout(std430, binding=2) coherent buffer Voxels{
@@ -47,6 +47,6 @@ const int voxel_block_size = 960;
 
 void main() {
     g_out.v_pos = vec4(Particle[v_index][0].xyz, 1.0); // set vertex position, w=1.0
-    g_out.v_color = vec4(Particle[v_index][2].xy/length(Particle[v_index][2].xy), 0.0, 1.0); // set vertex color use acc, w=1.0
+    g_out.v_color = vec4(Particle[v_index][1].xyz, 1.0); // set vertex color use velo, w=1.0
 
 }
