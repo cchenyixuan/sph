@@ -159,7 +159,7 @@ class CreateBoundaryParticles:
         self.d = 2*self.r
 
     def __call__(self, *args, **kwargs):
-        return self.generate_boundary_particle_iterative(4)
+        return self.generate_boundary_particle_iterative(2)
 
     def generate_boundary_particle_iterative(self, layers=1):
         boundary_particles = []
@@ -202,9 +202,9 @@ class CreateBoundaryParticles:
         buffer = np.zeros((boundary_particles.shape[0] * 4, 4), dtype=np.float32)
         for step, item in enumerate(boundary_particles):
             buffer[step * 4][:3] = item
-            buffer[step * 4 + 1][3] = 3.0
-            buffer[step * 4 + 2][3] = 700.0
-            buffer[step * 4 + 3][:] = np.array((1.0, 1.0, 1.0, 5000.0), dtype=np.float32)
+            buffer[step * 4 + 1][3] = 1e-6*8
+            buffer[step * 4 + 2][3] = 1000.0
+            buffer[step * 4 + 3][:] = np.array((1.0, 1.0, 1.0, 1000), dtype=np.float32)
 
         return buffer
 
@@ -243,10 +243,45 @@ class CreateBoundaryParticles:
         return buffer
 
 
+class LoadParticleObj:
+    def __init__(self, file, vertex_type=0.0, mass=0.0):
+        self.file = file
+        self.mass = mass
+        self.rho = 1000.0
+        self.pressure = 1000.0
+        self.type = vertex_type
+
+    def __call__(self, *args, **kwargs):
+        vertex_buffer = self.load_file()
+        output = np.zeros((vertex_buffer.shape[0]*4, 4), dtype=np.float32)
+
+        for step, vertex in enumerate(vertex_buffer):
+            output[step*4][:3] = vertex/10 + np.array((0.2, 1.0, 0.2), dtype=np.float32)
+            output[step * 4+1][:3] = np.array((0.2, 1.0, 0.2), dtype=np.float32)
+            output[step*4+1][3] = self.mass
+            output[step*4+2][0] = self.type
+            output[step*4+2][1] = 0.0
+        return output
+
+    def load_file(self):
+        import re
+        find_vertex = re.compile(r"v (\+?-?[\d.]+) (\+?-?[\d.]+) (\+?-?[\d.]+)\n", re.S)
+        data = []
+        with open(self.file, "r") as f:
+            for row in f:
+                ans = re.findall(find_vertex, row)
+                if ans:
+                    data.append(ans[0])
+            f.close()
+        return np.array(data, dtype=np.float32)
+
+
+
+
 if __name__ == "__main__":
     H = 0.25
     R = 0.2
-    Domain = [[0,0,0], [1,1,1]]  # 8x3
+    Domain = [[0, 0, 0], [1, 1, 1]]  # 8x3
     voxels = CreateVoxels(domain=Domain, h=H)()
     print(voxels)
     print(voxels.shape)

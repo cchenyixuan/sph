@@ -419,7 +419,7 @@ void EulerMethod(){
     // particle position and velocity will be set and particle acceleration will be erased
     Particle[particle_index-1][0].xyz = future_pos;
     Particle[particle_index-1][1].xyz += Particle[particle_index-1][3].xyz*DELTA_T;
-    Particle[particle_index-1][2].xyz += ParticleSubData[particle_index-1][0].xyz*DELTA_T/(2*Particle[particle_index-1][1].w);
+    // Particle[particle_index-1][2].xyz += ParticleSubData[particle_index-1][0].xyz*DELTA_T/(2*Particle[particle_index-1][1].w);
 }
 
 void main() {

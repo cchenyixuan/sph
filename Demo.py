@@ -3,7 +3,7 @@ import numpy as np
 from OpenGL.GL import *
 from OpenGL.GL.shaders import compileProgram, compileShader
 
-from SpaceDivision import CreateVoxels, CreateParticles, CreateBoundaryParticles
+from SpaceDivision import CreateVoxels, CreateParticles, CreateBoundaryParticles, LoadParticleObj
 import time
 from utils.float_to_fraction import find_fraction
 
@@ -15,16 +15,17 @@ class Demo:
         # H = h_p/h_q and R = r_p/r_q
         self.h_p, self.h_q = find_fraction(str(self.H))
         self.r_p, self.r_q = find_fraction(str(self.R))
-        self.Domain = [[0, 0, 0], [0, 1, 0], [0, 0, 1], [0, 1, 1], [1, 0, 0], [1, 0, 1], [1, 1, 0], [3, 3, 3]]  # 8x3
+        self.Domain = [[0, 0, 0], [1.0, 1.0, 1.0]]  # 8x3
         t = time.time()
         self.voxels = CreateVoxels(domain=self.Domain, h=self.H)()
         print(self.voxels.shape, "voxel {}s".format(time.time()-t))
         t = time.time()
-        self.particles = CreateParticles(domain=[[0.2, 0.2, 0.2], [1.2, 2.2, 1.2]], h=self.H, r=self.R)()
+        self.particles = LoadParticleObj(r"C:\Users\cchen\Desktop\pumps.obj", 0.0, 1e-6)()# CreateParticles(domain=[[0.0, 0.0, 0.0], [0.1, 0.2, 0.1]], h=self.H, r=self.R)()
         print(self.particles.shape, "particle {}s".format(time.time()-t))
         t = time.time()
         self.boundary_particles = CreateBoundaryParticles(domain=self.Domain, h=self.H, r=self.R)()
         print(self.boundary_particles.shape, "boundary particle {}s".format(time.time()-t))
+
 
         self.voxel_number = self.voxels.shape[0] // (182*4)  # (n * (182*4), 4)
         self.particle_number = self.particles.shape[0] // 4  # (n * 4, 4)

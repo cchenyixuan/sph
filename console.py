@@ -10,7 +10,6 @@ from camera import Camera
 from PIL import Image
 
 
-
 console = False
 console_buffer = """>>>"""
 

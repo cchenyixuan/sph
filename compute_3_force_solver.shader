@@ -55,11 +55,11 @@ const float PI = 3.141592653589793;
 const float REST_DENS = 700.0;
 const float EOS_CONST = 100.0;
 const float VISC = 0.004;
-const float VISC_TRANSFER = 0.0;
+const float VISC_TRANSFER = 0.1;
 const float DELTA_T = 0.00045;
 
-const float COHESION = 0.1;  // surface tension for domain
-const float ADHESION = -1.1;  // surface tension for boundary
+const float COHESION = 0.01;  // surface tension for domain
+const float ADHESION = -0.01;  // surface tension for boundary
 
 
 float h2 = h * h;
@@ -174,8 +174,8 @@ void ComputeParticleForce(){
     vec3 f_external = vec3(0.0, -9.81, 0.0);  // gravity
     vec3 f_cohesion = vec3(0.0, 0.0, 0.0);  // surface tension of domain particles
     vec3 f_adhesion = vec3(0.0, 0.0, 0.0);  // surface tension of boundary particles
-    vec3 f_transfer = vec3(0.0, 0.0, 0.0);  // Vorticity transfer force
-    vec3 t_transfer = vec3(0.0, 0.0, 0.0);  // Vorticity transfer torque
+    // vec3 f_transfer = vec3(0.0, 0.0, 0.0);  // Vorticity transfer force
+    // vec3 t_transfer = vec3(0.0, 0.0, 0.0);  // Vorticity transfer torque
     // neighbourhoods count
     vec2 neighbourhood_counter = vec2(0.0, 0.0);  // .x: domain_particle; .y: boundary_particle
     // find neighbourhood vertices, i.e., P_j
@@ -208,9 +208,9 @@ void ComputeParticleForce(){
                 f_cohesion -= COHESION * Particle[index_j-1][1].w*xij*poly6_3d(rij, h);
 
                 // f_transfer += MASS_i*VISC_TRANSFER * 1/rho_i * (P_i_v_angluar-P_j_v_angluar)xgrad_spiky_3d(xij.x, xij.y, xij.z, rij, h);  // VISC_TRANSFER refers to mu/rho
-                f_transfer += Particle[particle_index-1][1].w*VISC_TRANSFER/Particle[particle_index-1][2].w * cross((Particle[particle_index-1][2].xyz-Particle[index_j-1][2].xyz), grad_spiky_3d(xij.x, xij.y, xij.z, rij, h));
+                // f_transfer += Particle[particle_index-1][1].w*VISC_TRANSFER/Particle[particle_index-1][2].w * cross((Particle[particle_index-1][2].xyz-Particle[index_j-1][2].xyz), grad_spiky_3d(xij.x, xij.y, xij.z, rij, h));
                 // t_transfer += MASS_i*VISC_TRANSFER * 1/rho_i * (P_i_v-P_j_v)xgrad_spiky_3d(xij.x, xij.y, xij.z, rij, h);  // this term needs to -2*P_i_v_angluar afrterwards
-                t_transfer += Particle[particle_index-1][1].w*VISC_TRANSFER/Particle[particle_index-1][2].w * cross((Particle[particle_index-1][1].xyz-Particle[index_j-1][1].xyz), grad_spiky_3d(xij.x, xij.y, xij.z, rij, h));
+                // t_transfer += Particle[particle_index-1][1].w*VISC_TRANSFER/Particle[particle_index-1][2].w * cross((Particle[particle_index-1][1].xyz-Particle[index_j-1][1].xyz), grad_spiky_3d(xij.x, xij.y, xij.z, rij, h));
 
             }
         }
@@ -275,9 +275,9 @@ void ComputeParticleForce(){
                         f_cohesion -= COHESION * Particle[index_j-1][1].w*xij*poly6_3d(rij, h);
 
                         // f_transfer += MASS_i*VISC_TRANSFER * 1/rho_i * (P_i_v_angluar-P_j_v_angluar)xgrad_spiky_3d(xij.x, xij.y, xij.z, rij, h);  // VISC_TRANSFER refers to mu/rho
-                        f_transfer += Particle[particle_index-1][1].w*VISC_TRANSFER/Particle[particle_index-1][2].w * cross((Particle[particle_index-1][2].xyz-Particle[index_j-1][2].xyz), grad_spiky_3d(xij.x, xij.y, xij.z, rij, h));
+                        // f_transfer += Particle[particle_index-1][1].w*VISC_TRANSFER/Particle[particle_index-1][2].w * cross((Particle[particle_index-1][2].xyz-Particle[index_j-1][2].xyz), grad_spiky_3d(xij.x, xij.y, xij.z, rij, h));
                         // t_transfer += MASS_i*VISC_TRANSFER * 1/rho_i * (P_i_v-P_j_v)xgrad_spiky_3d(xij.x, xij.y, xij.z, rij, h);  // this term needs to -2*P_i_v_angluar afrterwards
-                        t_transfer += Particle[particle_index-1][1].w*VISC_TRANSFER/Particle[particle_index-1][2].w * cross((Particle[particle_index-1][1].xyz-Particle[index_j-1][1].xyz), grad_spiky_3d(xij.x, xij.y, xij.z, rij, h));
+                        // t_transfer += Particle[particle_index-1][1].w*VISC_TRANSFER/Particle[particle_index-1][2].w * cross((Particle[particle_index-1][1].xyz-Particle[index_j-1][1].xyz), grad_spiky_3d(xij.x, xij.y, xij.z, rij, h));
 
                     }
                 }
@@ -317,9 +317,9 @@ void ComputeParticleForce(){
 
     // compute force
     //            P_i_acceleration           = (f_pressure + f_viscosity + f_external)/mass
-    t_transfer -= Particle[particle_index-1][1].w*VISC_TRANSFER*2*Particle[particle_index-1][2].xyz;
-    ParticleSubData[particle_index-1][0].xyz = t_transfer;
-    Particle[particle_index-1][3].xyz = (f_pressure + f_viscosity + f_external*Particle[particle_index-1][1].w + f_cohesion + f_adhesion + f_transfer)/Particle[particle_index-1][1].w;
+    // t_transfer -= Particle[particle_index-1][1].w*VISC_TRANSFER*2*Particle[particle_index-1][2].xyz;
+    // ParticleSubData[particle_index-1][0].xyz = t_transfer;
+    Particle[particle_index-1][3].xyz = (f_pressure + f_viscosity + f_external*Particle[particle_index-1][1].w + f_cohesion + f_adhesion)/Particle[particle_index-1][1].w;
     // adapt counter to particle[i][2].xy
     //Particle[particle_index-1][2].xy = neighbourhood_counter;
 }
