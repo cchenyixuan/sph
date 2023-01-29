@@ -7,25 +7,36 @@ from SpaceDivision import CreateVoxels, CreateParticles, CreateBoundaryParticles
 import time
 from utils.float_to_fraction import find_fraction
 
+from project_loader import Project
+
 
 class Demo:
     def __init__(self):
-        self.H = 0.1
-        self.R = self.H/5
+        self.H = 0.02
+        self.R = self.H/4
         # H = h_p/h_q and R = r_p/r_q
         self.h_p, self.h_q = find_fraction(str(self.H))
         self.r_p, self.r_q = find_fraction(str(self.R))
-        self.Domain = [[0, 0, 0], [1.0, 1.0, 1.0]]  # 8x3
+        """
+        self.Domain = [[0, 0, 0], [2, 0.5, 0.5]]  # 8x3
         t = time.time()
         self.voxels = CreateVoxels(domain=self.Domain, h=self.H)()
         print(self.voxels.shape, "voxel {}s".format(time.time()-t))
         t = time.time()
-        self.particles = LoadParticleObj(r"C:\Users\cchen\Desktop\pumps.obj", 0.0, 1e-6)()# CreateParticles(domain=[[0.0, 0.0, 0.0], [0.1, 0.2, 0.1]], h=self.H, r=self.R)()
+        self.particles = CreateParticles(domain=[[0.8, 0.1, 0.1], [1.8, 0.49, 0.49]], h=self.H, r=self.R)()
         print(self.particles.shape, "particle {}s".format(time.time()-t))
         t = time.time()
         self.boundary_particles = CreateBoundaryParticles(domain=self.Domain, h=self.H, r=self.R)()
         print(self.boundary_particles.shape, "boundary particle {}s".format(time.time()-t))
-
+        """
+        self.project = Project(self.H, r"./models/frame_recurrent.obj", r"./models/domain_recurrent.obj", r"./models/pump_cover_recurrent.obj", r"./models/pump_slice_recurrent.obj")
+        self.voxels = self.project.voxels
+        self.particles = self.project.particles
+        self.boundary_particles = self.project.boundary_particles
+        self.pump_particles = self.project.pump_particles
+        self.boundary_particles = np.vstack((self.boundary_particles, self.pump_particles))
+        # self.tube = LoadParticleObj(r"./models/pumps.obj", 2.0, 0.002*1000)()
+        # self.boundary_particles = np.vstack((self.boundary_particles, self.tube))
 
         self.voxel_number = self.voxels.shape[0] // (182*4)  # (n * (182*4), 4)
         self.particle_number = self.particles.shape[0] // 4  # (n * 4, 4)
@@ -33,7 +44,7 @@ class Demo:
 
         self.voxel_particle_numbers = np.zeros((self.voxel_number, ), dtype=np.int32)
 
-        self.indices_buffer = np.array([i for i in range(max(self.particle_number, self.boundary_particle_number))], dtype=np.int32)
+        self.indices_buffer = np.array([i for i in range(max(self.particle_number, self.boundary_particle_number, self.voxel_number))], dtype=np.int32)
 
         # global status buffer
         # [n_particle, n_boundary_particle, n_voxel, voxel_memory_length, voxel_block_size, h_p, h_q, r_p, r_q, max_velocity_n_times_than_r, rest_dense, eos_constant]
@@ -167,7 +178,13 @@ class Demo:
 
         glUniform1i(self.compute_shader_5_n_particle_loc, int(self.particle_number))
         glUniform1i(self.compute_shader_5_n_voxel_loc, int(self.voxel_number))
-        glUniform1f(self.compute_shader_5_h_loc, self.H)
+        glUniform1d(self.compute_shader_5_h_loc, self.H)
+
+        # compute shader a
+        self.compute_shader_a = compileProgram(compileShader(open("./MovingBoundaryShaders/compute_a_moving_boundary.shader", "rb"), GL_COMPUTE_SHADER))
+        glUseProgram(self.compute_shader_a)
+        self.compute_shader_a_current_step_loc = glGetUniformLocation(self.compute_shader_a, "current_step")
+        glUniform1i(self.compute_shader_a_current_step_loc, 0)
 
         # render shader
         self.render_shader = compileProgram(compileShader(open("vertex.shader", "rb"), GL_VERTEX_SHADER),
@@ -178,10 +195,12 @@ class Demo:
         self.render_shader_h_loc = glGetUniformLocation(self.render_shader, "h")
         self.projection_loc = glGetUniformLocation(self.render_shader, "projection")
         self.view_loc = glGetUniformLocation(self.render_shader, "view")
+        self.render_shader_color_type_loc = glGetUniformLocation(self.render_shader, "color_type")
 
         glUniform1i(self.render_shader_n_particle_loc, int(self.particle_number))
         glUniform1i(self.render_shader_n_voxel_loc, int(self.voxel_number))
         glUniform1f(self.render_shader_h_loc, self.H)
+        glUniform1i(self.render_shader_color_type_loc, 0)
 
         # render shader vector
         self.render_shader_vector = compileProgram(compileShader(open("VectorShaders/vector_vertex.shader", "rb"), GL_VERTEX_SHADER),
@@ -193,10 +212,12 @@ class Demo:
         self.render_shader_vector_h_loc = glGetUniformLocation(self.render_shader_vector, "h")
         self.vector_projection_loc = glGetUniformLocation(self.render_shader_vector, "projection")
         self.vector_view_loc = glGetUniformLocation(self.render_shader_vector, "view")
+        self.render_shader_vector_vector_type_loc = glGetUniformLocation(self.render_shader_vector, "vector_type")
 
         glUniform1i(self.render_shader_vector_n_particle_loc, int(self.particle_number))
         glUniform1i(self.render_shader_vector_n_voxel_loc, int(self.voxel_number))
         glUniform1f(self.render_shader_vector_h_loc, self.H)
+        glUniform1i(self.render_shader_vector_vector_type_loc, 0)
 
 
 
@@ -244,7 +265,7 @@ class Demo:
         self.voxel_projection_loc = glGetUniformLocation(self.render_shader_voxel, "projection")
         self.voxel_view_loc = glGetUniformLocation(self.render_shader_voxel, "view")
 
-    def __call__(self, i, pause, show_vector=True):
+    def __call__(self, i, pause=False, show_vector=False, show_voxel=False, show_boundary=False):
         if self.need_init:
             self.need_init = False
 
@@ -256,6 +277,10 @@ class Demo:
             glDispatchCompute(self.particle_number, 1, 1)
             glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
         if not pause:
+            glUseProgram(self.compute_shader_a)
+            glDispatchCompute(28492, 1, 1)
+            glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
+
             glUseProgram(self.compute_shader_2)
             glDispatchCompute(self.particle_number, 1, 1)
             glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
@@ -278,14 +303,17 @@ class Demo:
         # glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)
 
         glBindVertexArray(self.vao)
-        # glUseProgram(self.render_shader_voxel)
-        # glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
-        # glLineWidth(2)
-        # glDrawArrays(GL_POINTS, 0, self.voxel_number)
 
-        # glUseProgram(self.render_shader_boundary)
-        # glPointSize(4)
-        # glDrawArrays(GL_POINTS, 0, self.boundary_particle_number//4)
+        if show_voxel:
+            glUseProgram(self.render_shader_voxel)
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+            glLineWidth(2)
+            glDrawArrays(GL_POINTS, 0, self.voxel_number)
+
+        if show_boundary:
+            glUseProgram(self.render_shader_boundary)
+            glPointSize(4)
+            glDrawArrays(GL_POINTS, 0, self.boundary_particle_number)
 
         glUseProgram(self.render_shader)
         glPointSize(2)

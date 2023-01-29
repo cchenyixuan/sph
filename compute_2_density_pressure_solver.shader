@@ -54,7 +54,7 @@ const int voxel_block_size = 960;
 
 const float PI = 3.141592653589793;
 const float REST_DENS = 1000.0;
-const float EOS_CONST = 276.571;
+const float EOS_CONST = 276.571*1.5;
 const float VISC = 10.0;
 const float DELTA_T = 0.00045;
 
@@ -176,7 +176,7 @@ void ComputeParticleDensityPressure(){
     for(int j=0; j<voxel_block_size; ++j){
         // vertex index
         int index_j = Voxel[(voxel_id-1)*voxel_memory_length+32+j];  // starts from 1 or -1
-        if(index_j==0){continue;}  // empty slot
+        if(index_j==0){break;}  // empty slot
         // P_j is a domain particle
         else if(index_j>0){
 
@@ -219,7 +219,7 @@ void ComputeParticleDensityPressure(){
             for(int j=0; j<voxel_block_size; ++j){
                 // vertex index
                 int index_j = Voxel[(neighborhood_id-1)*voxel_memory_length+32+j];  // starts from 1 or -1
-                if(index_j==0){continue;}  // empty slot
+                if(index_j==0){break;}  // empty slot
                 // P_j is a domain particle
                 else if(index_j>0){
                     // distance rij

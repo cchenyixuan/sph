@@ -28,6 +28,10 @@ class DisplayPort:
         self.middle_click = False
         self.pause = False
         self.show_vector = False
+        self.show_boundary = False
+        self.show_voxel = False
+        self.record = False
+        self.current_step = 0
         self.counter = 0
         self.camera = Camera()
 
@@ -64,21 +68,25 @@ class DisplayPort:
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
             # render codes
-            self.demo(self.counter, False, self.show_vector)
+            self.demo(self.counter, pause=self.pause, show_vector=self.show_vector, show_boundary=self.show_boundary, show_voxel=self.show_voxel)
             if not self.pause:
-                glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.demo.sbo_particles)
-                a0 = np.frombuffer(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, self.demo.particles.nbytes), dtype=np.float32)
-                a = np.reshape(a0, (-1, 4))
-                print(a[:16])
-            self.pause = True
-            # glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.demo.sbo_boundary_particles)
-            # b0 = np.frombuffer(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, self.demo.boundary_particles.nbytes),
-            #                    dtype=np.float32)
-            # b = np.reshape(b0, (-1, 4))
-            # glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.demo.sbo_voxels)
-            # c0 = np.frombuffer(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, self.demo.voxels.nbytes),
-            #                    dtype=np.int32)
-            # c = np.reshape(c0, (-1, 4))
+                self.current_step += 1
+            glUseProgram(self.demo.compute_shader_a)
+            glUniform1i(self.demo.compute_shader_a_current_step_loc, self.current_step)
+            """
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.demo.sbo_particles)
+            a0 = np.frombuffer(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, self.demo.particles.nbytes),
+                               dtype=np.float32)
+            a = np.reshape(a0, (-1, 4))
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.demo.sbo_boundary_particles)
+            b0 = np.frombuffer(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, self.demo.boundary_particles.nbytes),
+                               dtype=np.float32)
+            b = np.reshape(b0, (-1, 4))
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.demo.sbo_voxels)
+            c0 = np.frombuffer(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, self.demo.voxels.nbytes),
+                               dtype=np.int32)
+            c = np.reshape(c0, (-1, 4))
+            """
             """
             total = 0
             total_after = 0
@@ -126,8 +134,9 @@ class DisplayPort:
                 glUniformMatrix4fv(self.demo.vector_view_loc, 1, GL_FALSE, self.view)
                 self.view_changed = False
             # time.sleep(0.02)
-            self.save_frames(f"tmp/{i}.jpg")
-            i += 1
+            if self.record:
+                self.save_frames(f"tmp/{i}.jpg")
+                i += 1
 
             glClearColor(0.0, 0.0, 0.0, 1.0)
             glfw.swap_buffers(self.window)
@@ -204,11 +213,37 @@ class DisplayPort:
         def key_press_clb(window, key, scancode, action, mods):
             if key == glfw.KEY_SPACE and action == glfw.PRESS:
                 self.pause = not self.pause
+                if self.pause:
+                    glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.demo.sbo_particles)
+                    a0 = np.frombuffer(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, self.demo.particles.nbytes),
+                                       dtype=np.float32)
+                    a = np.reshape(a0, (-1, 4))
+                    print(a[:16])
             if key == glfw.KEY_ENTER and action == glfw.PRESS:
                 self.counter += 1
                 self.counter %= self.demo.voxel_number
             if key == glfw.KEY_V and action == glfw.PRESS:
                 self.show_vector = not self.show_vector
+            if key == glfw.KEY_A and action == glfw.PRESS:
+                if self.show_vector:
+                    glProgramUniform1i(self.demo.render_shader_vector, self.demo.render_shader_vector_vector_type_loc, 1)
+                glProgramUniform1i(self.demo.render_shader, self.demo.render_shader_color_type_loc, 1)
+            if key == glfw.KEY_S and action == glfw.PRESS:
+                if self.show_vector:
+                    glProgramUniform1i(self.demo.render_shader_vector, self.demo.render_shader_vector_vector_type_loc, 0)
+                glProgramUniform1i(self.demo.render_shader, self.demo.render_shader_color_type_loc, 0)
+            if key == glfw.KEY_P and action == glfw.PRESS:
+                glProgramUniform1i(self.demo.render_shader, self.demo.render_shader_color_type_loc, 2)
+            if key == glfw.KEY_B and action == glfw.PRESS:
+                self.show_boundary = not self.show_boundary
+            if key == glfw.KEY_G and action == glfw.PRESS:
+                self.show_voxel = not self.show_voxel
+            if key == glfw.KEY_R and action == glfw.PRESS:
+                self.record = not self.record
+                if self.record:
+                    print("Recording in progress.")
+                else:
+                    print("Recording stopped.")
         glfw.set_key_callback(self.window, key_press_clb)
 
 

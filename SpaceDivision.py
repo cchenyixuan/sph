@@ -23,35 +23,35 @@ class CreateVoxels:
             # domain_mat[i, 0, :] = [index, (i % (x * y) // y) * self.h, (i % (x * y) % y) * self.h,
             #                        i // (x * y) * self.h]
             # int version
-            domain_mat[i, 0, :] = [index, (i % (x * y) % y), (i % (x * y) // y), i // (x * y)]
+            domain_mat[i, 0, :] = [index, (i % (x * y) % x), (i % (x * y) // x), i // (x * y)]
             back = max(0, index - (x * y))
             front = 0 if index + (x * y) > n else index + (x * y)
             pt = i % (x * y)
 
             if pt == 0:
-                buf = np.array([0, index + 1, 0, index + y, 0, 0, 0, index + y + 1], dtype=np.int32)
-            elif pt == y - 1:
-                buf = np.array([index - 1, 0, 0, index + y, 0, index + y - 1, 0, 0], dtype=np.int32)
-            elif pt == x * y - y:
-                buf = np.array([0, index + 1, index - y, 0, 0, 0, index - y + 1, 0], dtype=np.int32)
+                buf = np.array([0, index + 1, 0, index + x, 0, 0, 0, index + x + 1], dtype=np.int32)
+            elif pt == x - 1:
+                buf = np.array([index - 1, 0, 0, index + x, 0, index + x - 1, 0, 0], dtype=np.int32)
+            elif pt == x * y - x:
+                buf = np.array([0, index + 1, index - x, 0, 0, 0, index - x + 1, 0], dtype=np.int32)
             elif pt == x * y - 1:
-                buf = np.array([index - 1, 0,index - y, 0, index - y - 1, 0,  0, 0], dtype=np.int32)
+                buf = np.array([index - 1, 0, index - x, 0, index - x - 1, 0, 0, 0], dtype=np.int32)
             else:
-                if pt // y == 0:
-                    buf = np.array([index - 1, index + 1, 0, index + y, 0, index + y - 1, 0, index + y + 1],
+                if pt // x == 0:
+                    buf = np.array([index - 1, index + 1, 0, index + x, 0, index + x - 1, 0, index + x + 1],
                                    dtype=np.int32)
-                elif pt // y == x - 1:
-                    buf = np.array([index - 1, index + 1, index - y, 0, index - y - 1, 0, index - y + 1, 0],
+                elif pt // x == y - 1:
+                    buf = np.array([index - 1, index + 1, index - x, 0, index - x - 1, 0, index - x + 1, 0],
                                    dtype=np.int32)
-                elif pt % y == 0:
-                    buf = np.array([0, index + 1, index - y, index + y, 0, 0, index - y + 1, index + y + 1],
+                elif pt % x == 0:
+                    buf = np.array([0, index + 1, index - x, index + x, 0, 0, index - x + 1, index + x + 1],
                                    dtype=np.int32)
-                elif pt % y == x - 1:
-                    buf = np.array([index - 1, 0, index - y, index + y, index - y - 1, index + y - 1, 0, 0],
+                elif pt % x == y - 1:
+                    buf = np.array([index - 1, 0, index - x, index + x, index - x - 1, index + x - 1, 0, 0],
                                    dtype=np.int32)
                 else:
-                    buf = np.array([index - 1, index + 1, index - y, index + y,
-                                    index - y - 1, index + y - 1, index - y + 1, index + y + 1], dtype=np.int32)
+                    buf = np.array([index - 1, index + 1, index - x, index + x,
+                                    index - x - 1, index + x - 1, index - x + 1, index + x + 1], dtype=np.int32)
 
             contents = np.zeros((2, 8), dtype=np.float32)
             if back != 0:
@@ -202,7 +202,7 @@ class CreateBoundaryParticles:
         buffer = np.zeros((boundary_particles.shape[0] * 4, 4), dtype=np.float32)
         for step, item in enumerate(boundary_particles):
             buffer[step * 4][:3] = item
-            buffer[step * 4 + 1][3] = 1e-6*8
+            buffer[step * 4 + 1][3] = 0.001*12
             buffer[step * 4 + 2][3] = 1000.0
             buffer[step * 4 + 3][:] = np.array((1.0, 1.0, 1.0, 1000), dtype=np.float32)
 
@@ -244,7 +244,7 @@ class CreateBoundaryParticles:
 
 
 class LoadParticleObj:
-    def __init__(self, file, vertex_type=0.0, mass=0.0):
+    def __init__(self, file, vertex_type=0.0, mass=0.002*4):
         self.file = file
         self.mass = mass
         self.rho = 1000.0
@@ -256,11 +256,14 @@ class LoadParticleObj:
         output = np.zeros((vertex_buffer.shape[0]*4, 4), dtype=np.float32)
 
         for step, vertex in enumerate(vertex_buffer):
-            output[step*4][:3] = vertex/10 + np.array((0.2, 1.0, 0.2), dtype=np.float32)
+            output[step*4][:3] = vertex/10 + np.array((0.2, 0.6, 0.2), dtype=np.float32)
             output[step * 4+1][:3] = np.array((0.2, 1.0, 0.2), dtype=np.float32)
             output[step*4+1][3] = self.mass
-            output[step*4+2][0] = self.type
-            output[step*4+2][1] = 0.0
+            output[step*4+2][0] = self.type  # type
+            output[step*4+2][1] = abs(vertex[1]//0.1)  # group_id
+            output[step * 4 + 2][3] = 1000.0
+            output[step * 4 + 3][3] = 1000.0
+        print(vertex_buffer.shape, np.max(vertex_buffer[:, 0])/10+0.2, np.min(vertex_buffer[:, 0])/10+0.2, np.max(vertex_buffer[:, 1])/10+1.0, np.min(vertex_buffer[:, 1])/10+1.0, np.max(vertex_buffer[:, 2])/10+0.2, np.min(vertex_buffer[:, 2])/10+0.2)
         return output
 
     def load_file(self):

@@ -28,15 +28,51 @@ uniform float h;  // smooth radius
 uniform mat4 projection;
 uniform mat4 view;
 
+uniform int color_type;
+
 
 const int voxel_memory_length = 2912;
 const int voxel_block_size = 960;
+
+
+vec3 get_color_gradient(float ratio){
+    // ratio in range 0.9-1.1
+    /*
+        0.9 --> purple(0.5, 0.0, 1.0)
+        0.93 --> blue(0.0, 0.0, 1.0)
+        0.96 --> cyan(0.0, 1.0, 1.0)
+        1.0 --> green(0.0, 1.0, 0.0)
+        1.03 --> yellow(1.0, 1.0, 0.0)
+        1.06 --> orange(1.0, 0.5, 0.0)
+        1.1 --> red(1.0, 0.0, 0.0)
+        0.9-1.1 r 1.0-0.0-0.0-0.0-1.0-1.0-1.0
+    */
+    float red = 0.0;
+    if(ratio<1.0){red=min(max(-15*(ratio-0.933), 0.0), 1.0);}
+    else if(ratio>=1.0){red=min(max(30*(ratio-1.0), 0.0), 1.0);}
+    float green = 0.0;
+    if(ratio<1.0){green=min(max(30*(ratio-0.933), 0.0), 1.0);}
+    else if(ratio>=1.0){green=min(max(-15*(ratio-1.1), 0.0), 1.0);}
+    float blue = min(max(-30*(ratio-1.0), 0.0), 1.0);
+    return vec3(red, green, blue);
+}
 
 void main() {
     gl_Position = projection*view*vec4(Particle[v_index][0].xyz, 1.0); // set vertex position, w=1.0
     int voxel_id = int(round(Particle[v_index][0].w));
     vec3 voxel_center = vec3(float(Voxel[(voxel_id-1)*voxel_memory_length+1])*h, float(Voxel[(voxel_id-1)*voxel_memory_length+2])*h, float(Voxel[(voxel_id-1)*voxel_memory_length+3])*h);
     // float l = length(Particle[v_index][3].xyz);
-    v_color = vec4(abs(Particle[v_index][3].xyz), 1.0); // set output color by its acc
+    //v_color = vec4(abs(Particle[v_index][3].xyz), 1.0); // set output color by its acc
     //v_color = vec4(abs(sin(float(voxel_id/2))), abs(cos(float(voxel_id/3))), abs(sin(float(voxel_id/5))), 0.3);
+    switch(color_type){
+        case 0:  // velocity
+            v_color = vec4(abs(Particle[v_index][1].xyz), 1.0);
+            break;
+        case 1:  // acc
+            v_color = vec4(abs(Particle[v_index][3].xyz), 1.0);
+            break;
+        case 2:  // pressure(density)
+            v_color = vec4(get_color_gradient(Particle[v_index][2].w/1000.0).xyz, 1.0);
+
+    }
 }

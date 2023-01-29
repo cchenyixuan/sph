@@ -10,7 +10,7 @@ out vec4 v_color;
 
 uniform int n_particle;  // particle number
 uniform int n_voxel;  // voxel number
-uniform float h;  // smooth radius
+uniform double h;  // smooth radius
 
 uniform mat4x4 projection;
 uniform mat4x4 view;

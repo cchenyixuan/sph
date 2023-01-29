@@ -97,7 +97,7 @@ def find_fraction(s):
 # Driver Code
 if __name__ == '__main__':
     # Given str
-    string = "0.98(02015)"
+    string = "0.0010(748204902093273)"
 
     # Function Call
     p, q = find_fraction(string)

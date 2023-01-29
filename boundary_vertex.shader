@@ -34,6 +34,12 @@ const int voxel_block_size = 960;
 
 void main() {
     gl_Position = projection*view*vec4(BoundaryParticle[v_index][0].xyz, 1.0); // set vertex position, w=1.0
-    v_color = vec4(0.5, 0.5, 0.5, 0.3); // set output color by its voxel id
+    v_color = vec4(0.5, 0.5, 0.5, 0.3);
+    if     (BoundaryParticle[v_index][2].x == 1.0 && BoundaryParticle[v_index][1].w==0.0){
+        v_color = vec4(0.0, 0.9, 0.0, 0.3);
+    }
+    else if(BoundaryParticle[v_index][2].x == 1.0 && BoundaryParticle[v_index][1].w>0.0){
+        v_color = vec4(BoundaryParticle[v_index][1].w/0.005, 0.5, 0.5, 0.3);
+    }
     //v_color = vec4(abs(sin(float(voxel_id/2))), abs(cos(float(voxel_id/3))), abs(sin(float(voxel_id/5))), 0.3);
 }

@@ -54,12 +54,12 @@ const int voxel_block_size = 960;
 const float PI = 3.141592653589793;
 const float REST_DENS = 700.0;
 const float EOS_CONST = 100.0;
-const float VISC = 0.004;
+const float VISC = 0.002;
 const float VISC_TRANSFER = 0.1;
 const float DELTA_T = 0.00045;
 
-const float COHESION = 0.01;  // surface tension for domain
-const float ADHESION = -0.01;  // surface tension for boundary
+const float COHESION = 0.001;  // surface tension for domain
+const float ADHESION = 0.001;  // surface tension for boundary
 
 
 float h2 = h * h;
@@ -171,7 +171,7 @@ void ComputeParticleForce(){
     // empty f_pressure, f_viscosity, f_external
     vec3 f_pressure = vec3(0.0, 0.0, 0.0);
     vec3 f_viscosity = vec3(0.0, 0.0, 0.0);
-    vec3 f_external = vec3(0.0, -9.81, 0.0);  // gravity
+    vec3 f_external = vec3(0.0, 0.0, 0.0);  // gravity
     vec3 f_cohesion = vec3(0.0, 0.0, 0.0);  // surface tension of domain particles
     vec3 f_adhesion = vec3(0.0, 0.0, 0.0);  // surface tension of boundary particles
     // vec3 f_transfer = vec3(0.0, 0.0, 0.0);  // Vorticity transfer force
@@ -184,7 +184,7 @@ void ComputeParticleForce(){
     for(int j=0; j<voxel_block_size; ++j){
         // vertex index
         int index_j = Voxel[(voxel_id-1)*voxel_memory_length+32+j];  // starts from 1
-        if(index_j==0){continue;}  // empty slot
+        if(index_j==0){break;}  // empty slot
         if(particle_index==index_j){continue;}
         // P_j is a domain particle
         if(index_j>0){
@@ -251,7 +251,7 @@ void ComputeParticleForce(){
             for(int j=0; j<voxel_block_size; ++j){
                 // vertex index
                 int index_j = Voxel[(neighborhood_id-1)*voxel_memory_length+32+j];  // starts from 1
-                if(index_j==0){continue;}  // empty slot
+                if(index_j==0){break;}  // empty slot
                 if(particle_index==index_j){continue;}
                 // P_j is a domain particle
                 if(index_j>0){

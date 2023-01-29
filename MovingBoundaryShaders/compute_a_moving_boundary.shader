@@ -25,7 +25,7 @@ layout(std430, binding=5) coherent buffer VoxelParticleOutNumbers{
 };
 layout(std430, binding=6) coherent buffer GlobalStatus{
     // simulation global settings and status such as max velocity etc.
-    // [n_particle, n_boundary_particle, n_voxel, voxel_memory_length, voxel_block_size, h_p, h_q, r_p, r_q, max_velocity_n-times_than_r, rest_dense, eos_constant]
+    // [n_particle, n_boundary_particle, n_voxel, voxel_memory_length, voxel_block_size, h_p, h_q, r_p, r_q, max_velocity_n-times_than_r, rest_dense, eos_constant, fixed_boundary_particle_numble, ]
     int Status[];
 };
 layout(std430, binding=7) buffer ParticlesSubData{
@@ -37,12 +37,14 @@ layout(std430, binding=7) buffer ParticlesSubData{
 layout(local_size_x=1, local_size_y=1, local_size_z=1) in;
 
 uint gid = gl_GlobalInvocationID.x;
-int particle_index = int(gid)+42968+1;
+int particle_index = int(gid)+139731+1;//73386+1;
 float particle_index_float = float(particle_index);
 
 uniform int current_step;
 
 float current_time = 0.00045*float(current_step);
+
+const float PI = 3.141592653589793;
 
 const int pointer_a = 1000;  // pump A
 const int pointer_b = 2000;  // pump B
@@ -56,7 +58,7 @@ float GetCurrentMassPump(float time, int group_index){
     float current_mass = 0.0;
     float id = float(group_index);
     float expected_time = time-id*0.0125;
-    if(0.0 < expected_time && expected_time <= 0.1){current_mass = 3.0*sin(10*PI*expected_time);}
+    if(0.0 < expected_time && expected_time <= 0.1){current_mass = 0.005*(sin(-0.5*PI+20*PI*expected_time)+1.0)/2;}
     else{current_mass = 0.0;}
     return current_mass;
 }
@@ -66,16 +68,16 @@ float GetCurrentMassGate(float time, int group_index){
     float current_mass = 0.0;
     switch (group_index){
         case 0:
-            if     (0.0 < time && time <= 0.05){current_mass = 3.0*cos(10*PI*time);}
-            else if(0.5 < time && time <= 0.55){current_mass = 3.0*sin(10*PI*(time-0.5));}
-            else if(0.05 < time && time <= 0.5){current_mass = 0.0;}
-            else if(0.55 < time && time <= 1.0){current_mass = 3.0;}
+            if     (0.0 < time && time <= 0.1){current_mass = 0.001*(cos(10*PI*time)+1.0)/2;}
+            else if(0.5 < time && time <= 0.6){current_mass = 0.001*(sin(-0.5*PI+10*PI*(time-0.5))+1.0)/2;}
+            else if(0.1 < time && time <= 0.5){current_mass = 0.0;}
+            else if(0.6 < time && time <= 1.0){current_mass = 0.001;}
             break;
-        case 1:
-            if     (0.0 < time && time <= 0.05){current_mass = 3.0*sin(10*PI*time);}
-            else if(0.5 < time && time <= 0.55){current_mass = 3.0*cos(10*PI*(time-0.5));}
-            else if(0.05 < time && time <= 0.5){current_mass = 3.0;}
-            else if(0.55 < time && time <= 1.0){current_mass = 0.0;}
+        case 30:
+            if     (0.0 < time && time <= 0.1){current_mass = 0.001*(sin(-0.5*PI+10*PI*time)+1.0)/2;}
+            else if(0.5 < time && time <= 0.6){current_mass = 0.001*(cos(10*PI*(time-0.5))+1.0)/2;}
+            else if(0.1 < time && time <= 0.5){current_mass = 0.001;}
+            else if(0.6 < time && time <= 1.0){current_mass = 0.0;}
             break;
     }
     return current_mass;
@@ -92,9 +94,9 @@ void ComputeBoundaryMovement(){
     if(int(round(BoundaryParticle[particle_index-1][2].x)) == 1){
         BoundaryParticle[particle_index-1][1].w = GetCurrentMassPump(clipped_time, int(round(BoundaryParticle[particle_index-1][2].y)));
     }
-    else if(int(round(BoundaryParticle[particle_index-1][2].x)) == 2){
-        BoundaryParticle[particle_index-1][1].w = GetCurrentMassGate(clipped_time, int(round(BoundaryParticle[particle_index-1][2].y)));
-    }
+    // else if(int(round(BoundaryParticle[particle_index-1][2].x)) == 2){
+    //     BoundaryParticle[particle_index-1][1].w = GetCurrentMassGate(clipped_time, int(round(BoundaryParticle[particle_index-1][2].y)));
+    // }
 }
 
 void main() {
