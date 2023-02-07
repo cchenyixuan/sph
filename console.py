@@ -6,6 +6,7 @@ import numpy as np
 from OpenGL.GL import *
 import glfw
 import Demo
+import Demo2
 from camera import Camera
 from PIL import Image
 
@@ -41,7 +42,7 @@ class DisplayPort:
     def __call__(self, *args, **kwargs):
         glfw.make_context_current(self.window)
 
-        self.demo = Demo.Demo()
+        self.demo = Demo2.Demo()
         glUseProgram(self.demo.render_shader_voxel)
         glUniformMatrix4fv(self.demo.voxel_projection_loc, 1, GL_FALSE, self.camera.projection)
         glUniformMatrix4fv(self.demo.voxel_view_loc, 1, GL_FALSE, self.camera.view)
@@ -136,11 +137,33 @@ class DisplayPort:
             # time.sleep(0.02)
             if self.record:
                 self.save_frames(f"tmp/{i}.jpg")
+                self.save_particle_data(i)
                 i += 1
 
             glClearColor(0.0, 0.0, 0.0, 1.0)
             glfw.swap_buffers(self.window)
         glfw.terminate()
+
+    def save_particle_data(self, i):
+        import os
+        os.makedirs("output", exist_ok=True)
+        os.makedirs("output/group1", exist_ok=True)
+        os.makedirs("output/group2", exist_ok=True)
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.demo.sbo_particles)
+        buffer = np.frombuffer(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, self.demo.particles.nbytes),
+                           dtype=np.float32).reshape((-1, 4))
+        ptr = buffer.shape[0]//2
+        self.save_as_ply(buffer[:ptr], f"output/group1/{i}.ply")
+        self.save_as_ply(buffer[ptr:], f"output/group2/{i}.ply")
+
+    @staticmethod
+    def save_as_ply(particles, export_path):
+        header = f"""ply\nformat ascii 1.0\nelement vertex {particles.shape[0]//4}\nproperty float x\nproperty float y\nproperty float z\nelement face 0\nproperty list uchar uint vertex_indices\nend_header\n"""
+        with open(export_path, "w") as f:
+            f.writelines(header)
+            for i in range(particles.shape[0]//4):
+                f.write("{} {} {}\n".format(*particles[i*4, :3]))
+            f.close()
 
     @staticmethod
     def save_frames(filepath):
@@ -232,6 +255,8 @@ class DisplayPort:
                 if self.show_vector:
                     glProgramUniform1i(self.demo.render_shader_vector, self.demo.render_shader_vector_vector_type_loc, 0)
                 glProgramUniform1i(self.demo.render_shader, self.demo.render_shader_color_type_loc, 0)
+            if key == glfw.KEY_D and action == glfw.PRESS:
+                glProgramUniform1i(self.demo.render_shader, self.demo.render_shader_color_type_loc, 3)
             if key == glfw.KEY_P and action == glfw.PRESS:
                 glProgramUniform1i(self.demo.render_shader, self.demo.render_shader_color_type_loc, 2)
             if key == glfw.KEY_B and action == glfw.PRESS:

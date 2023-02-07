@@ -171,7 +171,7 @@ void ComputeParticleForce(){
     // empty f_pressure, f_viscosity, f_external
     vec3 f_pressure = vec3(0.0, 0.0, 0.0);
     vec3 f_viscosity = vec3(0.0, 0.0, 0.0);
-    vec3 f_external = vec3(0.0, 0.0, 0.0);  // gravity
+    vec3 f_external = vec3(0.0, -9.81, 0.0);  // gravity
     vec3 f_cohesion = vec3(0.0, 0.0, 0.0);  // surface tension of domain particles
     vec3 f_adhesion = vec3(0.0, 0.0, 0.0);  // surface tension of boundary particles
     // vec3 f_transfer = vec3(0.0, 0.0, 0.0);  // Vorticity transfer force
