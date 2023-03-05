@@ -9,6 +9,7 @@ import Demo
 import Demo2
 from camera import Camera
 from PIL import Image
+from Coordinates import Coord
 
 
 console = False
@@ -27,11 +28,12 @@ class DisplayPort:
         self.left_click = False
         self.right_click = False
         self.middle_click = False
-        self.pause = False
+        self.pause = True
         self.show_vector = False
         self.show_boundary = False
         self.show_voxel = False
         self.record = False
+        self.axis = True
         self.current_step = 0
         self.counter = 0
         self.camera = Camera()
@@ -41,6 +43,9 @@ class DisplayPort:
 
     def __call__(self, *args, **kwargs):
         glfw.make_context_current(self.window)
+
+        self.coordinates = Coord()
+        self.three_d_cursor = Coord(r"./3d_cursor.obj")
 
         self.demo = Demo2.Demo()
         glUseProgram(self.demo.render_shader_voxel)
@@ -67,13 +72,21 @@ class DisplayPort:
         while not glfw.window_should_close(self.window):
             glfw.poll_events()
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+            # coord
+            if self.axis:
+                self.coordinates(projection_matrix=self.camera.projection, view_matrix=self.view,
+                                 model_matrix=pyrr.matrix44.create_identity(np.float32))
+                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+                self.three_d_cursor(projection_matrix=self.camera.projection, view_matrix=self.view,
+                                    model_matrix=pyrr.matrix44.create_from_translation(self.camera.lookat))
+                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
             # render codes
             self.demo(self.counter, pause=self.pause, show_vector=self.show_vector, show_boundary=self.show_boundary, show_voxel=self.show_voxel)
             if not self.pause:
                 self.current_step += 1
-            glUseProgram(self.demo.compute_shader_a)
-            glUniform1i(self.demo.compute_shader_a_current_step_loc, self.current_step)
+            # glUseProgram(self.demo.compute_shader_a)
+            # glUniform1i(self.demo.compute_shader_a_current_step_loc, self.current_step)
             """
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, self.demo.sbo_particles)
             a0 = np.frombuffer(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, self.demo.particles.nbytes),
@@ -137,7 +150,7 @@ class DisplayPort:
             # time.sleep(0.02)
             if self.record:
                 self.save_frames(f"tmp/{i}.jpg")
-                self.save_particle_data(i)
+                # self.save_particle_data(i)
                 i += 1
 
             glClearColor(0.0, 0.0, 0.0, 1.0)
@@ -185,7 +198,7 @@ class DisplayPort:
                 # glUseProgram(self.demo.render_shader_voxel)
                 # glUniformMatrix4fv(self.demo.voxel_view_loc, 1, GL_FALSE, mat)
             elif self.middle_click:
-                self.view = self.camera(pyrr.Vector3((-delta[0], delta[1], 0.0)), "middle")
+                self.view = self.camera(pyrr.Vector3((-delta[0]*0.1, delta[1]*0.1, 0.0)), "middle")
                 self.view_changed = True
                 # glUseProgram(self.demo.render_shader_voxel)
                 # glUniformMatrix4fv(self.demo.voxel_view_loc, 1, GL_FALSE, mat)
@@ -212,18 +225,18 @@ class DisplayPort:
 
         def scroll_clb(window, x_offset, y_offset):
             def f():
-                if sum([abs(item) for item in self.camera.position.xyz]) <= 1.01:
-                    if y_offset >= 0:
-                        return
-                for i in range(50):
-                    self.camera.position += self.camera.front * y_offset * 0.02
+                # if sum([abs(item) for item in self.camera.position.xyz]) <= 1.01:
+                #     if y_offset >= 0:
+                #         return
+                for i in range(20):
+                    self.camera.position += self.camera.front * y_offset * 0.01
                     self.camera.position = pyrr.Vector4([*self.camera.position.xyz, 1.0])
                     self.view = self.camera(flag="wheel")
                     self.view_changed = True
                     time.sleep(0.005)
-                    if abs(sum([*self.camera.position.xyz])) <= 1.01:
-                        if y_offset >= 0:
-                            return
+                    # if abs(sum([*self.camera.position.xyz])) <= 1.01:
+                    #     if y_offset >= 0:
+                    #         return
 
             t = threading.Thread(target=f)
             t.start()
@@ -269,6 +282,8 @@ class DisplayPort:
                     print("Recording in progress.")
                 else:
                     print("Recording stopped.")
+            if key == glfw.KEY_C and action == glfw.PRESS:
+                self.axis = not self.axis
         glfw.set_key_callback(self.window, key_press_clb)
 
 

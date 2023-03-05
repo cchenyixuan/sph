@@ -1,5 +1,6 @@
 import numpy as np
 from OpenGL.GL import *
+from OpenGL.GL.shaders import compileProgram, compileShader
 
 
 class Euler:
@@ -33,11 +34,11 @@ class Euler:
 
 class Coord:
 
-    def __init__(self):
+    def __init__(self, model=r"./coord.obj"):
         # x, y, z, u, v, nx, ny, nz
         self.vertices = []
         self.indices = []
-        self.vertices, self.indices = self.load_file(r"./visualization/coord.obj")
+        self.vertices, self.indices = self.load_file(model)
         self.vertices = self.vertices
         print(self.indices.shape)
         self.vao = glGenVertexArrays(1)
@@ -51,6 +52,40 @@ class Coord:
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(0))
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.indices.nbytes, self.indices, GL_STATIC_DRAW)
+
+        self.vertex_src = """
+        # version 460 core
+        layout(location=0) in vec3 vertex_position;
+        layout(location=1) in vec3 vertex_color;
+        uniform mat4 view;
+        uniform mat4 projection;
+        uniform mat4 model;
+        out vec3 f_color;
+        void main(){
+            gl_Position=projection*view*model*vec4(vertex_position.x, vertex_position.y, vertex_position.z, 1.0);
+            f_color = vertex_color;
+        }
+        """
+        self.fragment_src = """
+        # version 460 core
+        in vec3 f_color;
+        out vec4 FragColor;
+        
+        void main(){
+            if(length(f_color)<0.1){
+                FragColor=vec4(0.8, 0.5, 1.0, 1.0);
+            }
+            else{
+                FragColor=vec4(abs(f_color/length(f_color)*3).xyz, 1.0);
+            }
+        }
+        """
+        self.shader = compileProgram(compileShader(self.vertex_src, GL_VERTEX_SHADER),
+                                     compileShader(self.fragment_src, GL_FRAGMENT_SHADER))
+        self.projection_loc = glGetUniformLocation(self.shader, "projection")
+        self.view_loc = glGetUniformLocation(self.shader, "view")
+        self.model_loc = glGetUniformLocation(self.shader, "model")
+
 
     @staticmethod
     def search_data(data_values, data_type):
@@ -106,13 +141,20 @@ class Coord:
         # self.vertices = buffer
         # self.indices = [[i] for i in range(len(buffer))]
 
-        return self.__call__()
-
-    def __call__(self):
         self.vertices = np.array(self.vertices, dtype=np.float32)
         # self.vertices = self.vertices.reshape([self.vertices.shape[0]*self.vertices.shape[1], ])
         self.indices = np.array(self.indices, dtype=np.uint32)
         # self.indices = self.indices.reshape([self.indices.shape[0]*self.indices.shape[1], ])
         return self.vertices, self.indices
 
+    def __call__(self, projection_matrix=None, view_matrix=None, model_matrix=None):
+        glUseProgram(self.shader)
+        if projection_matrix is not None:
+            glUniformMatrix4fv(self.projection_loc, 1, GL_FALSE, projection_matrix)
+        if view_matrix is not None:
+            glUniformMatrix4fv(self.view_loc, 1, GL_FALSE, view_matrix)
+        if model_matrix is not None:
+            glUniformMatrix4fv(self.model_loc, 1, GL_FALSE, model_matrix)
+        glBindVertexArray(self.vao)
+        glDrawElements(GL_TRIANGLES, self.indices.nbytes // 4, GL_UNSIGNED_INT, None)
 

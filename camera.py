@@ -7,6 +7,8 @@ class Camera:
         self.position = pyrr.Vector4([0.0, 0.0, 10.0, 1.0])
         self.front = pyrr.Vector4([0.0, 0.0, -1.0, 1.0])
         self.up = pyrr.Vector4([0.0, 1.0, 0.0, 1.0])
+        self.lookat = pyrr.Vector4([0.0, 0.0, 0.0, 1.0])
+        # self.axis_pos = pyrr.Vector4([*(self.position+self.front+np.array([0.8, 0.45, 0.0, 1.0], dtype=np.float32)).xyz, 1.0])
 
         self.projection = pyrr.matrix44.create_perspective_projection_matrix(45, 1920/1080, 0.001, 1000)
         self.view = pyrr.matrix44.create_look_at(self.position.xyz, self.front.xyz, self.up.xyz)
@@ -31,22 +33,27 @@ class Camera:
                 self.up = rotation_matrix @ self.up
             # rotate
             else:
-                rotation_matrix = pyrr.matrix44.create_from_axis_rotation(self.up.xyz, -delta.x / 100) @ \
+                rotation_matrix = pyrr.matrix44.create_from_axis_rotation(self.up.xyz, delta.x / 100) @ \
                                   pyrr.matrix44.create_from_axis_rotation(
                                       pyrr.vector3.cross(self.front.xyz, self.up.xyz),
                                       delta.y / 100)
-                self.position = rotation_matrix @ self.position
+                self.position = rotation_matrix @ (self.position-pyrr.Vector4([*self.lookat.xyz, 0.0])) + pyrr.Vector4([*self.lookat.xyz, 0.0])
                 self.front = rotation_matrix @ self.front
                 self.up = rotation_matrix @ self.up
         # middle: move
         if flag == "middle" and self.mouse_middle:
             right = pyrr.vector3.normalize(pyrr.vector3.cross(self.front.xyz, self.up.xyz))
+            pos_before = np.array([*self.position], dtype=np.float32)
             self.position += pyrr.Vector4([*right, 0.0]) * delta.x/10
             self.position += pyrr.Vector4([*self.up.xyz, 0.0]) * delta.y/10
+            delta_p = self.position-pos_before
+            self.lookat += delta_p
+            self.front = pyrr.Vector4([*pyrr.vector3.normalize(pyrr.Vector3([*self.lookat.xyz])-pyrr.Vector3([*self.position.xyz])), 1.0])
 
 
         # TODO: apply translation
 
+        # self.axis_pos = pyrr.Vector4([*(self.position+self.front+np.array([0.8, 0.45, 0.0, 1.0], dtype=np.float32)).xyz, 1.0])
 
         return pyrr.matrix44.create_look_at(self.position.xyz, (self.position+self.front).xyz, self.up.xyz)
 

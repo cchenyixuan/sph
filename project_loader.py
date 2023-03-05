@@ -3,16 +3,17 @@ from SpaceDivision import CreateVoxels
 
 
 class Project:
-    def __init__(self, h, frame, domain, boundary, moving_parts):
+    def __init__(self, h, r, frame, domain, boundary, moving_parts):
         self.h = h
-        self.r = h/4
+        self.r = r
         self.rho = 1000.0
         self.particle_mass = (2*self.r)**3*self.rho * 1.1  # scaled by 1.5
         self.frame = self.get_geometry(self.load_file(frame))
         self.voxels = CreateVoxels(self.frame, h)()
         self.particles = self.load_domain(self.load_file(domain))
         self.boundary_particles = self.load_boundary(self.load_file(boundary))
-        self.pump_particles = self.load_pump_boundary(self.load_file(moving_parts))
+        # self.pump_particles = self.load_pump_boundary(self.load_file(moving_parts))
+        self.particles_buffer = self.create_particle_sub_buffer(self.particles, 1)
 
     @staticmethod
     def load_file(file):
@@ -27,6 +28,13 @@ class Project:
                     data.append([ans[0], ans[1], -ans[2]])
             f.close()
         return np.array(data, dtype=np.float32)
+
+    @staticmethod
+    def create_particle_sub_buffer(particles, group_id):
+        buffer = np.zeros_like(particles)
+        for i in range(buffer.shape[0] // 4):
+            buffer[i * 4 + 3][-1] = group_id
+        return buffer
 
     @staticmethod
     def get_geometry(particles):
@@ -48,7 +56,7 @@ class Project:
         output = np.zeros((particles.shape[0] * 4, 4), dtype=np.float32)
         for step, vertex in enumerate(particles):
             output[step * 4][:3] = vertex
-            output[step * 4 + 1][3] = self.particle_mass*4  # boundary has 4 times mass as usual particles
+            output[step * 4 + 1][3] = self.particle_mass*6  # boundary has 4 times mass as usual particles
             output[step * 4 + 2][3] = self.rho
             output[step * 4 + 3][3] = 1000.0  # initial pressure
         return output
@@ -57,7 +65,7 @@ class Project:
         output = np.zeros((particles.shape[0] * 4, 4), dtype=np.float32)
         for step, vertex in enumerate(particles):
             output[step * 4][:3] = vertex
-            output[step * 4 + 1][3] = self.particle_mass * 4  # boundary has 4 times mass as usual particles
+            output[step * 4 + 1][3] = self.particle_mass * 1  # boundary has 4 times mass as usual particles
             output[step * 4 + 2][3] = self.rho
             output[step * 4 + 3][3] = 100.0  # initial pressure
 
@@ -133,9 +141,9 @@ class ProjectTwoPhase:
         output = np.zeros((particles.shape[0] * 4, 4), dtype=np.float32)
         for step, vertex in enumerate(particles):
             output[step * 4][:3] = vertex
-            output[step * 4 + 1][3] = self.particle_mass*4  # boundary has 4 times mass as usual particles
+            output[step * 4 + 1][3] = self.particle_mass*8  # boundary has 4 times mass as usual particles
             output[step * 4 + 2][3] = self.rho
-            output[step * 4 + 3][3] = 1000.0  # initial pressure
+            output[step * 4 + 3][3] = 5000.0  # initial pressure
         return output
 
     def load_moving_boundary(self, particles):
@@ -164,6 +172,6 @@ class ProjectTwoPhase:
 
 
 if __name__ == "__main__":
-    # project = Project(0.02, r"./models/frame_recurrent.obj", r"./models/domain_recurrent.obj", r"./models/pump_cover_recurrent.obj", r"./models/pump_slice_recurrent.obj")
-    project = ProjectTwoPhase(0.02, r"./models/CUBE_FRAME.obj", r"./models/phase1.obj",
-                      r"./models/phase2.obj", r"./models/CUBE_COVER.obj")
+    project = Project(0.02, r"./utils/fountain_frame.obj", r"./utils/fountain_water.obj", r"./utils/fountain_boundary.obj", r"./models/pump_slice_recurrent.obj")
+    # project = ProjectTwoPhase(0.02, r"./models/CUBE_FRAME.obj", r"./models/phase1.obj",
+    #                   r"./models/phase2.obj", r"./models/CUBE_COVER.obj")
